@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mike's GTD Command Center</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--accent:#3b82f6;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--text:#f8fafc;--muted:#94a3b8;--border:#334155;}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif;}
+body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+header{display:flex;justify-content:space-between;align-items:center;padding:1rem 2rem;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+h1{font-size:1.25rem;font-weight:700;letter-spacing:-0.02em;}
+nav{display:flex;gap:0.5rem;}
+nav button{background:transparent;border:1px solid var(--border);color:var(--muted);padding:0.5rem 1rem;border-radius:0.5rem;cursor:pointer;font-size:0.875rem;transition:all 0.2s;}
+nav button:hover{color:var(--text);border-color:var(--accent);}
+nav button.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600;}
+main{flex:1;padding:1.5rem 2rem;overflow-y:auto;}
+.tab-content{display:none;animation:fadeIn 0.3s ease;}
+.tab-content.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.grid{display:grid;gap:1rem;}
+.grid-2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));}
+.grid-3{grid-template-columns:repeat(auto-fit,minmax(250px,1fr));}
+.grid-4{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));}
+.card{background:var(--card);border:1px solid var(--border);border-radius:0.75rem;padding:1.25rem;}
+.card h2{font-size:1rem;margin-bottom:0.75rem;color:var(--text);display:flex;align-items:center;gap:0.5rem;}
+.card h2 .icon{font-size:1.25rem;}
+.status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:0.5rem;}
+.status-dot.green{background:var(--green);}
+.status-dot.yellow{background:var(--yellow);}
+.status-dot.red{background:var(--red);}
+.status-dot.gray{background:var(--muted);}
+.item-row{display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid var(--border);font-size:0.9rem;}
+.item-row:last-child{border-bottom:none;}
+.item-row .meta{font-size:0.75rem;color:var(--muted);}
+.kanban{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;min-height:400px;}
+.kanban-col{background:var(--card);border-radius:0.75rem;padding:1rem;border:1px solid var(--border);}
+.kanban-col h3{font-size:0.875rem;margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);}
+.kanban-card{background:var(--bg);border:1px solid var(--border);border-radius:0.5rem;padding:0.75rem;margin-bottom:0.5rem;font-size:0.875rem;cursor:pointer;transition:border-color 0.2s;}
+.kanban-card:hover{border-color:var(--accent);}
+.kanban-card .tag{display:inline-block;font-size:0.7rem;padding:0.15rem 0.4rem;border-radius:0.25rem;background:var(--border);color:var(--muted);margin-top:0.4rem;}
+.cockpit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;}
+.area-card{background:var(--card);border:1px solid var(--border);border-radius:0.75rem;padding:1rem;}
+.area-card .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;}
+.area-card h3{font-size:0.95rem;}
+.area-card .status{font-size:1.25rem;}
+.area-card .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-top:0.75rem;}
+.metric{text-align:center;padding:0.5rem;background:var(--bg);border-radius:0.5rem;}
+.metric .num{font-size:1.1rem;font-weight:700;}
+.metric .lbl{font-size:0.65rem;color:var(--muted);text-transform:uppercase;}
+.weekly-layout{display:grid;grid-template-columns:250px 1fr;gap:1rem;}
+.day-col{background:var(--card);border-radius:0.75rem;padding:1rem;border:1px solid var(--border);}
+.day-col h4{font-size:0.8rem;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
+.day-item{padding:0.4rem 0;font-size:0.85rem;border-bottom:1px solid var(--border);}
+.traffic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;}
+.traffic-item{background:var(--card);border-radius:0.75rem;padding:1rem;border-left:4px solid var(--border);}
+.traffic-item.green{border-left-color:var(--green);}
+.traffic-item.yellow{border-left-color:var(--yellow);}
+.traffic-item.red{border-left-color:var(--red);}
+.traffic-item h4{font-size:0.9rem;margin-bottom:0.25rem;}
+.traffic-item p{font-size:0.8rem;color:var(--muted);}
+#connectionStatus{position:fixed;bottom:1rem;right:1rem;padding:0.5rem 1rem;border-radius:0.5rem;font-size:0.75rem;background:var(--card);border:1px solid var(--border);z-index:200;}
+#connectionStatus.online{border-color:var(--green);color:var(--green);}
+#connectionStatus.offline{border-color:var(--yellow);color:var(--yellow);}
+.btn{background:var(--accent);color:#fff;border:none;padding:0.5rem 1rem;border-radius:0.5rem;cursor:pointer;font-size:0.875rem;transition:opacity 0.2s;}
+.btn:hover{opacity:0.9;}
+input,textarea,select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:0.5rem;border-radius:0.5rem;width:100%;font-size:0.875rem;}
+.add-form{display:flex;gap:0.5rem;margin-top:0.75rem;}
+.add-form input{flex:1;}
+@media(max-width:768px){.kanban{grid-template-columns:1fr;}.weekly-layout{grid-template-columns:1fr;}.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}header{flex-direction:column;gap:0.5rem;}nav{flex-wrap:wrap;justify-content:center;}}
+</style>
+</head>
+<body>
+<header>
+<h1>🎯 Mike's GTD Command Center</h1>
+<nav id="tabNav">
+<button data-tab="daily" class="active">Daily Command</button>
+<button data-tab="kanban">Kanban</button>
+<button data-tab="cockpit">Life Cockpit</button>
+<button data-tab="weekly">Weekly Plan</button>
+<button data-tab="traffic">Traffic Lights</button>
+</nav>
+</header>
+
+<main>
+<!-- DAILY COMMAND -->
+<section id="daily" class="tab-content active">
+<div class="grid grid-2">
+<div class="card">
+<h2><span class="icon">📅</span>Today — <span id="todayDate"></span></h2>
+<div class="item-row"><span>Morning startup</span><span class="meta">5-10 min</span></div>
+<div class="item-row"><span>Check calendar</span><span class="meta">Hard landscape</span></div>
+<div class="item-row"><span>Review active projects</span><span class="meta">5-7 max</span></div>
+<div class="item-row"><span>Build Today List</span><span class="meta">3 outcomes</span></div>
+<div class="item-row"><span>Protect focus time</span><span class="meta">Deep work block</span></div>
+</div>
+<div class="card">
+<h2><span class="icon">⭐</span>Top 3 Outcomes</h2>
+<div id="topOutcomes">
+<div class="item-row"><span class="status-dot green"></span><span contenteditable="true">Outcome 1: ____________</span></div>
+<div class="item-row"><span class="status-dot yellow"></span><span contenteditable="true">Outcome 2: ____________</span></div>
+<div class="item-row"><span class="status-dot gray"></span><span contenteditable="true">Outcome 3: ____________</span></div>
+</div>
+</div>
+</div>
+<div class="grid grid-3" style="margin-top:1rem;">
+<div class="card">
+<h2><span class="icon">🔴</span>P1 — Must Do</h2>
+<div id="p1List"><div class="item-row"><span>Loading from Notion...</span></div></div>
+<div class="add-form"><input id="p1Input" placeholder="Add P1 action..."/><button class="btn" onclick="addItem('p1')">+</button></div>
+</div>
+<div class="card">
+<h2><span class="icon">🟡</span>P2 — Should Do</h2>
+<div id="p2List"><div class="item-row"><span>Loading from Notion...</span></div></div>
+<div class="add-form"><input id="p2Input" placeholder="Add P2 action..."/><button class="btn" onclick="addItem('p2')">+</button></div>
+</div>
+<div class="card">
+<h2><span class="icon">🟢</span>P3 — Could Do</h2>
+<div id="p3List"><div class="item-row"><span>Loading from Notion...</span></div></div>
+<div class="add-form"><input id="p3Input" placeholder="Add P3 action..."/><button class="btn" onclick="addItem('p3')">+</button></div>
+</div>
+</div>
+<div class="card" style="margin-top:1rem;">
+<h2><span class="icon">🌙</span>Shutdown — 10 min</h2>
+<div class="grid grid-4">
+<div class="item-row">Capture loose thoughts</div>
+<div class="item-row">Mark completed</div>
+<div class="item-row">Move unfinished to Next Actions</div>
+<div class="item-row">Update Waiting For</div>
+<div class="item-row">Note stuck projects</div>
+<div class="item-row">Top 3 for tomorrow</div>
+<div class="item-row">Close the loop</div>
+<div class="item-row"><em>Done for today. The system has it.</em></div>
+</div>
+</div>
+</section>
+
+<!-- KANBAN -->
+<section id="kanban" class="tab-content">
+<div class="kanban">
+<div class="kanban-col" data-status="inbox"><h3>📥 Inbox</h3><div id="kanbanInbox"><div class="kanban-card">Capture everything here first<div class="tag">@anywhere</div></div></div></div>
+<div class="kanban-col" data-status="clarify"><h3>🔍 Clarify</h3><div id="kanbanClarify"></div></div>
+<div class="kanban-col" data-status="active"><h3>⚡ Active</h3><div id="kanbanActive"></div></div>
+<div class="kanban-col" data-status="waiting"><h3>⏳ Waiting</h3><div id="kanbanWaiting"></div></div>
+<div class="kanban-col" data-status="done"><h3>✅ Done</h3><div id="kanbanDone"></div></div>
+</div>
+</section>
+
+<!-- LIFE COCKPIT -->
+<section id="cockpit" class="tab-content">
+<div class="cockpit-grid" id="cockpitGrid">
+<!-- Areas injected by JS -->
+</div>
+</section>
+
+<!-- WEEKLY PLAN -->
+<section id="weekly" class="tab-content">
+<div class="card" style="margin-bottom:1rem;">
+<h2><span class="icon">📆</span>Weekly Review Checklist</h2>
+<div class="grid grid-4">
+<div class="item-row">Clear all inboxes</div>
+<div class="item-row">Review past calendar</div>
+<div class="item-row">Review upcoming calendar</div>
+<div class="item-row">Review Areas of Focus</div>
+<div class="item-row">Review Goals</div>
+<div class="item-row">Review Projects (5-7 active)</div>
+<div class="item-row">Review Next Actions</div>
+<div class="item-row">Review Waiting For</div>
+<div class="item-row">Review Someday/Maybe</div>
+<div class="item-row">Plan the week</div>
+<div class="item-row">Reality check questions</div>
+<div class="item-row">Calendar blocks for deep work</div>
+</div>
+</div>
+<div class="weekly-layout">
+<div class="day-col"><h4>Monday</h4><div id="monItems"></div></div>
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:1rem;">
+<div class="day-col"><h4>Tue</h4><div id="tueItems"></div></div>
+<div class="day-col"><h4>Wed</h4><div id="wedItems"></div></div>
+<div class="day-col"><h4>Thu</h4><div id="thuItems"></div></div>
+<div class="day-col"><h4>Fri</h4><div id="friItems"></div></div>
+<div class="day-col"><h4>Sat</h4><div id="satItems"></div></div>
+<div class="day-col"><h4>Sun</h4><div id="sunItems"></div></div>
+</div>
+</div>
+</section>
+
+<!-- TRAFFIC LIGHTS -->
+<section id="traffic" class="tab-content">
+<div class="grid grid-2" style="margin-bottom:1rem;">
+<div class="card">
+<h2><span class="icon">🎯</span>Goals</h2>
+<div id="trafficGoals"><div class="item-row">Loading...</div></div>
+</div>
+<div class="card">
+<h2><span class="icon">📁</span>Projects</h2>
+<div id="trafficProjects"><div class="item-row">Loading...</div></div>
+</div>
+</div>
+<div class="card">
+<h2><span class="icon">🧭</span>Areas of Focus</h2>
+<div class="traffic-grid" id="trafficAreas"></div>
+</div>
+</section>
+</main>
+
+<div id="connectionStatus" class="offline">Offline — localStorage mode</div>
+
+<script>
+const TABS = ['daily','kanban','cockpit','weekly','traffic'];
+const AREAS = [
+{name:'Work',emoji:'💼',sub:['EXP Realty Recruiting','Real Estate Coaching','Cash Quick Home Buyers','AI Dev & Education'],status:'green',projects:4,actions:8,waiting:2},
+{name:'Fitness',emoji:'🏃',sub:[],status:'green',projects:1,actions:3,waiting:0},
+{name:'Health',emoji:'🩺',sub:[],status:'yellow',projects:2,actions:4,waiting:1},
+{name:'Finances',emoji:'💰',sub:[],status:'green',projects:1,actions:2,waiting:0},
+{name:'Relationships',emoji:'❤️',sub:[],status:'green',projects:1,actions:3,waiting:0},
+{name:'Family',emoji:'👨‍👩‍👧',sub:[],status:'yellow',projects:2,actions:5,waiting:1},
+{name:'Personal Life',emoji:'🧘',sub:[],status:'green',projects:1,actions:2,waiting:0}
+];
+
+let notionConnected = false;
+
+// Tab switching
+document.getElementById('tabNav').addEventListener('click', e => {
+if(!e.target.dataset.tab) return;
+TABS.forEach(t => document.getElementById(t).classList.remove('active'));
+document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+document.getElementById(e.target.dataset.tab).classList.add('active');
+e.target.classList.add('active');
+});
+
+// Date
+document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+
+// Add item to list
+function addItem(listId){
+const input = document.getElementById(listId+'Input');
+const val = input.value.trim();
+if(!val) return;
+const div = document.createElement('div');
+div.className = 'item-row';
+div.innerHTML = `<span>${val}</span><button onclick="this.parentElement.remove()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;">×</button>`;
+document.getElementById(listId+'List').appendChild(div);
+input.value = '';
+saveLocal();
+}
+
+// Render cockpit
+function renderCockpit(){
+const grid = document.getElementById('cockpitGrid');
+grid.innerHTML = AREAS.map(a => `
+<div class="area-card">
+<div class="header"><h3>${a.emoji} ${a.name}</h3><span class="status">${a.status==='green'?'🟢':a.status==='yellow'?'🟡':'🔴'}</span></div>
+${a.sub.length?'<div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem;">'+a.sub.join(' · ')+'</div>':''}
+<div class="metrics">
+<div class="metric"><div class="num">${a.projects}</div><div class="lbl">Projects</div></div>
+<div class="metric"><div class="num">${a.actions}</div><div class="lbl">Actions</div></div>
+<div class="metric"><div class="num">${a.waiting}</div><div class="lbl">Waiting</div></div>
+</div>
+</div>`).join('');
+}
+
+// Render traffic lights
+function renderTraffic(){
+document.getElementById('trafficAreas').innerHTML = AREAS.map(a => `
+<div class="traffic-item ${a.status}">
+<h4>${a.emoji} ${a.name}</h4>
+<p>${a.projects} projects · ${a.actions} actions · ${a.waiting} waiting</p>
+</div>`).join('');
+}
+
+// Notion proxy call
+async function notionCall(endpoint,params){
+try{
+const r = await fetch('/api/notion',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint,params})});
+if(!r.ok) throw new Error('API error');
+return await r.json();
+}catch(e){console.error('Notion call failed:',e);return null;}
+}
+
+// Load from Notion
+async function loadNotion(){
+const status = document.getElementById('connectionStatus');
+const inbox = await notionCall('getBlockChildren',{blockId:'35f94c8e-0d92-816b-a64e-c9ac1ff7efd1'});
+if(inbox){
+notionConnected = true;
+status.textContent = 'Online — Notion connected';
+status.className = 'online';
+// TODO: parse and render real data
+}else{
+status.textContent = 'Offline — localStorage mode';
+status.className = 'offline';
+loadLocal();
+}
+}
+
+// localStorage
+function saveLocal(){localStorage.setItem('gtdData',JSON.stringify({date:new Date().toISOString(),areas:AREAS}));}
+function loadLocal(){const d = localStorage.getItem('gtdData');if(d)console.log('Loaded local data');}
+
+// Init
+renderCockpit();
+renderTraffic();
+loadNotion();
+</script>
+</body>
+</html>

@@ -80,6 +80,25 @@ const PROPERTY_BUILDERS = {
   // Phase 4 — added to Today DB. Allen's "sacred" calendar: day/time-specific
   // commitments only. NOT a "I'd like to do this today" bucket.
   hardLandscape:      (v) => ['Hard Landscape',       { rich_text: [{ text: { content: String(v) } }] }],
+
+  // Phase 5 — Projects DB has a different Status/Area shape than the other
+  // GTD DBs (`select` instead of `status`/`multi_select`). Separate camelCase
+  // keys keep Phase 1's generic builders intact; the UI's project form chooses
+  // the right key based on the active tab.
+  projectStatus:      (v) => ['Status',               { select:    { name: String(v) } }],
+  projectArea:        (v) => ['Area',                 { select:    { name: String(v) } }],
+  // Phase 5 — Someday/Maybe DB also stores Area as `select`, not `multi_select`.
+  // Same Phase-1 latent shape mismatch as Projects.
+  somedayArea:        (v) => ['Area',                 { select:    { name: String(v) } }],
+
+  // Phase 5 — Natural Planning fields added to the Projects DB.
+  purpose:            (v) => ['Purpose',              { rich_text: [{ text: { content: String(v) } }] }],
+  vision:             (v) => ['Vision',               { rich_text: [{ text: { content: String(v) } }] }],
+  brainstorming:      (v) => ['Brainstorming',        { rich_text: [{ text: { content: String(v) } }] }],
+  organizing:         (v) => ['Organizing',           { rich_text: [{ text: { content: String(v) } }] }],
+  // Project Support Material — the two-way relation from Projects back to Reference.
+  // (Reference side already exists as `linkedProjects`.)
+  supportMaterial:    (v) => ['Support Material',     { relation:  toRelationArray(v) }],
 };
 
 function toMultiSelect(v) {
@@ -94,16 +113,37 @@ function toRelationArray(v) {
   return list.map((x) => String(x).trim()).filter(Boolean).map((id) => ({ id }));
 }
 
-function buildProperties(body) {
+function buildProperties(body, opts) {
+  const allowClears = !!(opts && opts.allowClears);
   const properties = {};
   for (const [key, value] of Object.entries(body || {})) {
-    if (value == null || value === '' || (Array.isArray(value) && value.length === 0)) continue;
     const builder = PROPERTY_BUILDERS[key];
     if (!builder) continue;
+    const isEmpty = value == null || value === '' || (Array.isArray(value) && value.length === 0);
+    if (isEmpty) {
+      // Phase 5 — empty value in PATCH means "clear this field". Each Notion
+      // property type has its own "empty" shape (title/rich_text → empty array;
+      // select/date → null; multi_select/relation → empty array). Derive the
+      // shape by probing the builder with a placeholder and switching on the key.
+      if (!allowClears) continue;
+      const empty = emptyValueForBuilder(builder);
+      if (empty) properties[empty[0]] = empty[1];
+      continue;
+    }
     const [propName, propValue] = builder(value);
     properties[propName] = propValue;
   }
   return properties;
+}
+function emptyValueForBuilder(builder) {
+  const [name, val] = builder('x');
+  if ('title' in val)        return [name, { title: [] }];
+  if ('rich_text' in val)    return [name, { rich_text: [] }];
+  if ('select' in val)       return [name, { select: null }];
+  if ('multi_select' in val) return [name, { multi_select: [] }];
+  if ('date' in val)         return [name, { date: null }];
+  if ('relation' in val)     return [name, { relation: [] }];
+  return null;
 }
 
 function serializePage(page) {
@@ -166,6 +206,15 @@ function pageToBody(serialized) {
     itemsStillOpen:     serialized['Items Still Open'],
     captureForTomorrow: serialized['Capture for Tomorrow'],
     hardLandscape:      serialized['Hard Landscape'],
+    // Phase 5 — Projects-specific. We DON'T emit projectStatus/projectArea by
+    // default because the source page already exposes them under the same
+    // Notion property names as `status`/`area` keys; carrying both would
+    // duplicate. The UI explicitly picks `projectStatus` when editing a Project.
+    purpose:            serialized.Purpose,
+    vision:             serialized.Vision,
+    brainstorming:      serialized.Brainstorming,
+    organizing:         serialized.Organizing,
+    supportMaterial:    serialized['Support Material'],
   };
 }
 
@@ -197,6 +246,27 @@ function checkAuth(req) {
     return { ok: false, status: 401, msg: 'Invalid or missing X-Auth-Token' };
   }
   return { ok: true };
+}
+
+// Phase 5 — schema-aware move. Different GTD DBs have different property
+// names (Waiting For has "Waiting On"; Next Actions doesn't), so the naive
+// "carry everything from source, create on target" approach hit a 400 every
+// time. Filter the property bag against the target DB's actual property
+// names before creating. The schema is cached per warm process.
+const targetSchemaCache = new Map();
+async function getDbPropertyNames(n, dbId) {
+  if (targetSchemaCache.has(dbId)) return targetSchemaCache.get(dbId);
+  const db = await n.databases.retrieve({ database_id: dbId });
+  const names = new Set(Object.keys(db.properties || {}));
+  targetSchemaCache.set(dbId, names);
+  return names;
+}
+function filterPropertiesToSchema(properties, validNames) {
+  const out = {};
+  for (const [k, v] of Object.entries(properties)) {
+    if (validNames.has(k)) out[k] = v;
+  }
+  return out;
 }
 
 // Follow next_cursor until exhausted. Fixes the silent-truncate-at-100 bug.
@@ -252,7 +322,12 @@ module.exports = async (req, res) => {
       delete merged.toSection;
 
       const properties = buildProperties(merged);
-      const created = await n.pages.create({ parent: { database_id: targetDbId }, properties });
+      // Phase 5 — filter out properties the target DB doesn't have, so e.g.
+      // moving "Waiting On" from Waiting For into Next Actions just drops
+      // that property instead of returning Notion's 400.
+      const validNames = await getDbPropertyNames(n, targetDbId);
+      const filtered = filterPropertiesToSchema(properties, validNames);
+      const created = await n.pages.create({ parent: { database_id: targetDbId }, properties: filtered });
       await n.pages.update({ page_id: pageId, archived: true });
       return res.status(200).json({ ok: true, fromId: pageId, page: serializePage(created) });
     }
@@ -271,7 +346,9 @@ module.exports = async (req, res) => {
 
     if (req.method === 'PATCH') {
       if (!pageId) return res.status(400).json({ error: 'Missing id' });
-      const properties = buildProperties(req.body || {});
+      // Phase 5 — PATCH treats empty values as explicit clears. (ADD still
+      // drops them so optional form fields don't get sent as null selects.)
+      const properties = buildProperties(req.body || {}, { allowClears: true });
       if (!Object.keys(properties).length) {
         return res.status(400).json({ error: 'No updatable properties supplied' });
       }

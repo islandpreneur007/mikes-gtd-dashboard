@@ -106,6 +106,57 @@ body.mindsweep-open .main{padding-right:340px}
 .walkthrough-actions .triage-btn{padding:14px 12px;font-size:0.88rem;text-align:center}
 .walkthrough-empty{color:#9ba1ab;font-size:1rem;text-align:center;max-width:520px}
 
+/* Phase 5 — generic modal overlay (used for Edit, Natural Planning wizard, Support Material). */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,17,23,0.92);z-index:25;display:flex;align-items:center;justify-content:center;padding:24px}
+.modal-overlay[hidden]{display:none}
+.modal-card{background:#1a1d27;border:1px solid #3d4149;border-radius:12px;padding:24px;width:100%;max-width:680px;max-height:88vh;overflow-y:auto}
+.modal-card h2{font-size:1.1rem;color:#fff;margin-bottom:14px}
+.modal-card .modal-sub{font-size:0.78rem;color:#9ba1ab;margin-bottom:16px;line-height:1.45}
+.modal-card .modal-row{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.modal-card label{font-size:0.78rem;color:#9ba1ab}
+.modal-card input,.modal-card textarea,.modal-card select{width:100%;padding:8px 10px;border-radius:6px;border:1px solid #2d3139;background:#0f1117;color:#e8eaed;font-size:0.9rem;font-family:inherit;resize:vertical}
+.modal-card textarea{min-height:72px}
+.modal-card input:focus,.modal-card textarea:focus,.modal-card select:focus{outline:none;border-color:#7ec8a3}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.modal-actions button{padding:8px 16px;border-radius:6px;border:1px solid #2d3139;background:transparent;color:#e8eaed;cursor:pointer;font-size:0.85rem}
+.modal-actions button:hover{border-color:#7ec8a3;color:#7ec8a3}
+.modal-actions button.primary{background:#7ec8a3;color:#0f1117;border-color:#7ec8a3;font-weight:600}
+.modal-actions button.primary:hover{background:#6bb890}
+.modal-actions button:disabled{opacity:.5;cursor:wait}
+.wizard-steps{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.wizard-step{flex:1;min-width:80px;padding:6px 8px;border-radius:6px;background:#0f1117;border:1px solid #2d3139;font-size:0.7rem;color:#9ba1ab;text-align:center}
+.wizard-step.active{border-color:#7ec8a3;color:#7ec8a3}
+.wizard-step.done{border-color:#7ec8a3;color:#7ec8a3;opacity:.7}
+.wizard-help{font-size:0.78rem;color:#9ba1ab;margin-bottom:10px;line-height:1.5;background:#0f1117;border:1px solid #2d3139;border-radius:6px;padding:10px 12px}
+.support-list{display:flex;flex-direction:column;gap:6px}
+.support-list a{display:block;padding:10px 12px;background:#0f1117;border:1px solid #2d3139;border-radius:6px;color:#e8eaed;text-decoration:none;font-size:0.85rem}
+.support-list a:hover{border-color:#7ec8a3;color:#7ec8a3}
+.support-list .meta{font-size:0.7rem;color:#9ba1ab;margin-top:3px}
+.support-empty{padding:14px;font-size:0.82rem;color:#9ba1ab;background:#0f1117;border:1px solid #2d3139;border-radius:6px;text-align:center;font-style:italic}
+
+/* Phase 5 — Project Planning Trigger List drawer ("Stuck?"). Same pattern as MindSweep but left side, fired from Project cards. */
+.stuck-panel{position:fixed;top:0;left:0;width:340px;height:100vh;background:#1a1d27;border-right:1px solid #2d3139;padding:20px 18px;overflow-y:auto;transform:translateX(-100%);transition:transform .2s ease;z-index:8}
+.stuck-panel.open{transform:translateX(0)}
+.stuck-panel h3{font-size:0.95rem;color:#dd9e14;margin-bottom:6px}
+.stuck-panel .stuck-help{font-size:0.74rem;color:#9ba1ab;margin-bottom:14px;line-height:1.4}
+.stuck-panel details{margin-bottom:8px;border:1px solid #2d3139;border-radius:6px;padding:6px 10px;background:#0f1117}
+.stuck-panel details[open]{border-color:#3d4149}
+.stuck-panel summary{cursor:pointer;font-weight:600;font-size:0.82rem;color:#e8eaed}
+.stuck-panel ul{list-style:none;padding:8px 0 4px 0}
+.stuck-panel li{padding:4px 8px;font-size:0.78rem;color:#c4cad3;border-radius:4px}
+body.stuck-open .main{padding-left:360px}
+
+/* Phase 5 — Active Project Limit warning banner. */
+.limit-warning{padding:12px 14px;background:#3d2a14;border:1px solid #dd9e14;border-radius:8px;color:#f6d06a;margin-bottom:14px;font-size:0.85rem;display:flex;gap:10px;align-items:center}
+.limit-warning strong{color:#fff}
+
+/* Phase 5 — Next Actions sort dropdown (in the section toolbar). */
+.sort-select{padding:8px 10px;border-radius:6px;border:1px solid #2d3139;background:#0f1117;color:#e8eaed;font-size:0.82rem}
+.sort-select:focus{outline:none;border-color:#7ec8a3}
+
+/* Phase 5 — Generic per-card actions row (for non-Inbox tabs). Reuses triage-btn styling. */
+.actions-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+
 /* Phase 4 — Today dashboard. Each "section" is a card; fields auto-save on blur. */
 .today-section{background:#1a1d27;border-radius:10px;padding:18px;margin-bottom:16px;border:1px solid #2d3139}
 .today-section h3{font-size:0.95rem;color:#7ec8a3;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -184,6 +235,33 @@ body.mindsweep-open .main{padding-right:340px}
     <ul id="ms-professional"></ul>
   </details>
 </aside>
+
+<!-- Phase 5 — Project Planning Trigger List drawer ("Stuck?" button on Project cards).
+     Same shape as MindSweep but mounts on the left side and shows Allen's
+     Project Planning Trigger List (System Guides p.4). -->
+<aside id="stuck-panel" class="stuck-panel" aria-hidden="true">
+  <h3>🧠 Stuck? — Project Planning Trigger List</h3>
+  <p class="stuck-help">Allen's prompts to unblock a stalled project. Skim each category, capture anything that surfaces as a new Inbox item (use the quick-add bar above).</p>
+  <details open><summary>Resources</summary><ul id="stuck-resources"></ul></details>
+  <details><summary>Executive issues</summary><ul id="stuck-exec"></ul></details>
+  <details><summary>Administration</summary><ul id="stuck-admin"></ul></details>
+  <details><summary>Finance</summary><ul id="stuck-finance"></ul></details>
+  <details><summary>Operations</summary><ul id="stuck-ops"></ul></details>
+  <details><summary>Quality</summary><ul id="stuck-quality"></ul></details>
+  <details><summary>Politics</summary><ul id="stuck-politics"></ul></details>
+  <details><summary>Stakeholders</summary><ul id="stuck-stakeholders"></ul></details>
+  <details><summary>Legal</summary><ul id="stuck-legal"></ul></details>
+  <details><summary>Space</summary><ul id="stuck-space"></ul></details>
+  <details><summary>Research</summary><ul id="stuck-research"></ul></details>
+  <details><summary>PR</summary><ul id="stuck-pr"></ul></details>
+  <details><summary>Risks</summary><ul id="stuck-risks"></ul></details>
+  <details><summary>Creative thinking</summary><ul id="stuck-creative"></ul></details>
+</aside>
+
+<!-- Phase 5 — Generic modal overlay (Edit, Natural Planning wizard, Support Material). -->
+<div id="modal-overlay" class="modal-overlay" hidden>
+  <div class="modal-card" id="modal-card"></div>
+</div>
 
 <!-- Phase 3 — Walkthrough overlay (Mode B): one inbox item at a time, full focus. -->
 <div id="walkthrough-overlay" class="walkthrough-overlay" hidden>
@@ -275,6 +353,307 @@ async function loadTab(tab) {
     showError(e.message);
     document.getElementById('item-list').replaceChildren(textNode('Error loading data — check API connection', 'loading'));
   }
+}
+
+// ---------------- Phase 5 — Modal helpers, Edit, Natural Planning wizard, Support, Stuck? ----------------
+// Generic modal: pass a configured DOM node and it gets centered in the overlay.
+function openModal(node) {
+  const card = document.getElementById('modal-card');
+  card.replaceChildren(node);
+  document.getElementById('modal-overlay').hidden = false;
+}
+function closeModal() {
+  document.getElementById('modal-overlay').hidden = true;
+  document.getElementById('modal-card').replaceChildren();
+}
+function makeModalShell(title, subtitle) {
+  const wrap = document.createElement('div');
+  const h = document.createElement('h2'); h.textContent = title; wrap.appendChild(h);
+  if (subtitle) { const s = document.createElement('div'); s.className = 'modal-sub'; s.textContent = subtitle; wrap.appendChild(s); }
+  return wrap;
+}
+function makeModalRow(label, control) {
+  const row = document.createElement('div'); row.className = 'modal-row';
+  if (label) { const l = document.createElement('label'); l.textContent = label; row.appendChild(l); }
+  row.appendChild(control);
+  return row;
+}
+
+// Phase 5 — generic Edit modal. The field set is picked per tab, prefilled
+// from the page, and PATCHed back via the Phase 1 endpoint. The Projects tab
+// uses projectStatus / projectArea (select types, not status / multi_select)
+// to match that DB's actual schema.
+const EDIT_FIELDS = {
+  nextactions:  [
+    { key: 'name',       label: 'Name',     type: 'text'                                   },
+    { key: 'priority',   label: 'Priority', type: 'select', options: ['P1','P2','P3','P4'] },
+    { key: 'context',    label: 'Context',  type: 'select', options: ['@work','@home','@calls','@computer','@errands','@anywhere','@thinking'] },
+    { key: 'energy',     label: 'Energy',   type: 'select', options: ['Deep Work','Admin','Communication','Errand','Maintenance','Planning'] },
+    { key: 'area',       label: 'Area',     type: 'select', options: AREAS                 },
+  ],
+  projects: [
+    { key: 'name',          label: 'Name',           type: 'text'                                                       },
+    { key: 'projectStatus', label: 'Status',         type: 'select', options: ['Active','Waiting','Stalled','Someday','Complete'] },
+    { key: 'projectArea',   label: 'Area',           type: 'select', options: ['Work','Fitness','Health','Finances','Relationships','Family','Personal Life','Planning','Personal Systems'] },
+    { key: 'nextAction',    label: 'Next Action',    type: 'text'                                                       },
+    { key: 'purpose',       label: 'Purpose',        type: 'textarea'                                                   },
+    { key: 'vision',        label: 'Vision',         type: 'textarea'                                                   },
+    { key: 'brainstorming', label: 'Brainstorming',  type: 'textarea'                                                   },
+    { key: 'organizing',    label: 'Organizing',     type: 'textarea'                                                   },
+  ],
+  goals:        [
+    { key: 'name',   label: 'Name',           type: 'text'     },
+    { key: 'why',    label: 'Why It Matters', type: 'textarea' },
+    { key: 'status', label: 'Status',         type: 'select', options: ['🟢','🟡','🔴'] },
+  ],
+  waitingfor:   [
+    { key: 'name',      label: 'Name',         type: 'text' },
+    { key: 'waitingOn', label: 'Waiting On',   type: 'text' },
+    { key: 'need',      label: 'Need',         type: 'text' },
+    { key: 'since',     label: 'Since',        type: 'date' },
+    { key: 'followUp',  label: 'Follow Up',    type: 'date' },
+  ],
+  somedaymaybe: [
+    { key: 'name',        label: 'Name',   type: 'text' },
+    { key: 'somedayArea', label: 'Area',   type: 'select', options: AREAS },
+    { key: 'status',      label: 'Status', type: 'select', options: ['Active','Someday'] },
+  ],
+  reference:    [
+    { key: 'name',          label: 'Name',         type: 'text' },
+    { key: 'type',          label: 'Type',         type: 'select', options: ['Note','URL','File','Contact','Other'] },
+    { key: 'content',       label: 'Content',      type: 'textarea' },
+    { key: 'notes',         label: 'Notes',        type: 'textarea' },
+    { key: 'tags',          label: 'Tags (comma-separated)',  type: 'text' },
+    { key: 'areaOfFocus',   label: 'Area of Focus (comma-separated)', type: 'text' },
+    { key: 'dateAdded',     label: 'Date Added',   type: 'date' },
+  ],
+  tickler:      [
+    { key: 'name',            label: 'Name',                    type: 'text' },
+    { key: 'surfaceOn',       label: 'Surface On',              type: 'date' },
+    { key: 'actionOnSurface', label: 'Action When It Surfaces', type: 'text' },
+    { key: 'sourceContext',   label: 'Source / Context',        type: 'text' },
+    { key: 'notes',           label: 'Notes',                   type: 'textarea' },
+  ],
+};
+// Map a camelCase key onto the Notion property name on a serialized page, so
+// the Edit modal can prefill from `page` regardless of which DB it's from.
+const KEY_TO_NOTION = {
+  name: 'Name', priority: 'Priority', status: 'Status', projectStatus: 'Status',
+  area: 'Area', projectArea: 'Area', context: 'Context', energy: 'Energy',
+  why: 'Why It Matters', waitingOn: 'Waiting On', need: 'Need',
+  since: 'Since', followUp: 'Follow Up', nextAction: 'Next Action',
+  type: 'Type', tags: 'Tags', content: 'Content', notes: 'Notes',
+  dateAdded: 'Date Added', areaOfFocus: 'Area of Focus',
+  surfaceOn: 'Surface On', actionOnSurface: 'Action When It Surfaces', sourceContext: 'Source / Context',
+  date: 'Date', outcome1: 'Outcome 1', outcome2: 'Outcome 2', outcome3: 'Outcome 3',
+  hardLandscape: 'Hard Landscape', itemsCompleted: 'Items Completed',
+  itemsMovedForward: 'Items Moved Forward', itemsStillOpen: 'Items Still Open',
+  captureForTomorrow: 'Capture for Tomorrow',
+  purpose: 'Purpose', vision: 'Vision', brainstorming: 'Brainstorming', organizing: 'Organizing',
+};
+function prefillValue(key, page) {
+  const notionKey = KEY_TO_NOTION[key];
+  const v = notionKey ? page[notionKey] : '';
+  if (Array.isArray(v)) return v.join(', ');
+  return v == null ? '' : String(v);
+}
+function openEditModal(tab, page) {
+  const fields = EDIT_FIELDS[tab];
+  if (!fields) { showError(`No edit form for ${tab}`); return; }
+  const shell = makeModalShell(`Edit ${TABS[tab].title.replace(/^[^A-Za-z]+/, '')}`, 'Changes are PATCHed to Notion when you click Save.');
+  const inputs = {};
+  fields.forEach(f => {
+    let ctrl;
+    if (f.type === 'textarea') { ctrl = document.createElement('textarea'); }
+    else if (f.type === 'select') {
+      ctrl = document.createElement('select');
+      const blank = document.createElement('option'); blank.value = ''; blank.textContent = `${f.label}…`;
+      ctrl.appendChild(blank);
+      f.options.forEach(o => { const op = document.createElement('option'); op.value = o; op.textContent = o; ctrl.appendChild(op); });
+    } else if (f.type === 'date') { ctrl = document.createElement('input'); ctrl.type = 'date'; }
+    else                          { ctrl = document.createElement('input'); ctrl.type = 'text'; }
+    ctrl.value = prefillValue(f.key, page);
+    inputs[f.key] = ctrl;
+    shell.appendChild(makeModalRow(f.label, ctrl));
+  });
+  const actions = document.createElement('div'); actions.className = 'modal-actions';
+  const cancel = document.createElement('button'); cancel.textContent = 'Cancel';
+  cancel.addEventListener('click', closeModal);
+  const save = document.createElement('button'); save.textContent = 'Save'; save.className = 'primary';
+  save.addEventListener('click', async () => {
+    save.disabled = true;
+    try {
+      const body = {};
+      fields.forEach(f => {
+        const v = inputs[f.key].value.trim();
+        // Empty strings still get sent so Mike can clear a field. Notion treats '' as empty rich_text.
+        body[f.key] = v;
+      });
+      await apiFetchOk(`/api/notion?section=${tab}&id=${page.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      showOk('✓ Saved');
+      closeModal();
+      loadTab(tab);
+    } catch (e) { save.disabled = false; showError(e.message); }
+  });
+  actions.append(cancel, save);
+  shell.appendChild(actions);
+  openModal(shell);
+}
+
+// Phase 5 — Natural Planning wizard. Replaces the simple Project add form
+// with Allen's 5-step model (System Guides p.3): Purpose -> Vision ->
+// Brainstorming -> Organizing -> Next Action. All five fields are written
+// as Notion properties on the new Project so they're queryable later.
+const NATURAL_PLANNING_STEPS = [
+  { key: 'name',          label: 'Project Name',      type: 'text',     help: 'A short noun phrase. You can refine this later.' },
+  { key: 'purpose',       label: '1. Purpose',        type: 'textarea', help: 'Why is this being done? What are the guiding principles or rules?' },
+  { key: 'vision',        label: '2. Vision',         type: 'textarea', help: 'What does success look or feel like? Picture the wild-success state.' },
+  { key: 'brainstorming', label: '3. Brainstorming',  type: 'textarea', help: 'Any and all thoughts about this — open the floodgates, no filter. (Stuck? Open the Project Planning Trigger List on a project card later.)' },
+  { key: 'organizing',    label: '4. Organizing',     type: 'textarea', help: 'Components, sequences, priorities. What needs to happen and in what order?' },
+  { key: 'nextAction',    label: '5. Next Action',    type: 'text',     help: 'The very next physical, visible action. "Call John" not "decide about Q4 plan".' },
+];
+function openNaturalPlanningWizard() {
+  const shell = makeModalShell('Plan Naturally', "Allen's 5-step Natural Planning Model (skippable — Save creates the project with whatever's filled in).");
+  const stepsBar = document.createElement('div'); stepsBar.className = 'wizard-steps';
+  const stepLabels = ['Name', 'Purpose', 'Vision', 'Brainstorm', 'Organize', 'Next Action'];
+  stepLabels.forEach((s, i) => {
+    const d = document.createElement('div'); d.className = 'wizard-step'; d.textContent = `${i+1}. ${s}`;
+    stepsBar.appendChild(d);
+  });
+  shell.appendChild(stepsBar);
+  const inputs = {};
+  NATURAL_PLANNING_STEPS.forEach((step, i) => {
+    const help = document.createElement('div'); help.className = 'wizard-help'; help.textContent = step.help;
+    shell.appendChild(help);
+    const ctrl = step.type === 'textarea' ? document.createElement('textarea') : document.createElement('input');
+    if (step.type !== 'textarea') ctrl.type = 'text';
+    inputs[step.key] = ctrl;
+    ctrl.addEventListener('focus', () => {
+      stepsBar.querySelectorAll('.wizard-step').forEach((el, j) => { el.classList.toggle('active', j === i); el.classList.toggle('done', j < i && inputs[NATURAL_PLANNING_STEPS[j].key].value.trim()); });
+    });
+    shell.appendChild(makeModalRow(step.label, ctrl));
+  });
+  const actions = document.createElement('div'); actions.className = 'modal-actions';
+  const cancel = document.createElement('button'); cancel.textContent = 'Cancel';
+  cancel.addEventListener('click', closeModal);
+  const save = document.createElement('button'); save.textContent = 'Create project'; save.className = 'primary';
+  save.addEventListener('click', async () => {
+    const name = inputs.name.value.trim();
+    if (!name) { showError('Give the project a name first.'); inputs.name.focus(); return; }
+    save.disabled = true;
+    try {
+      const body = { name };
+      NATURAL_PLANNING_STEPS.forEach(step => {
+        if (step.key === 'name') return;
+        const v = inputs[step.key].value.trim();
+        if (v) body[step.key] = v;
+      });
+      // Mark new projects Active by default (uses the Phase 5 projectStatus builder).
+      body.projectStatus = 'Active';
+      await apiFetchOk('/api/notion?section=projects&action=add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      showOk('✓ Project created');
+      closeModal();
+      if (currentTab === 'projects') loadTab('projects');
+    } catch (e) { save.disabled = false; showError(e.message); }
+  });
+  actions.append(cancel, save);
+  shell.appendChild(actions);
+  openModal(shell);
+}
+
+// Phase 5 — Support Material modal. Cross-DB query: Reference items whose
+// Linked Projects relation contains this project's id. Lists each as a clickable
+// link to its Notion page.
+async function openSupportModal(project) {
+  const shell = makeModalShell(`📚 Support Material — ${project.Name || '(unnamed project)'}`, 'Reference items linked to this Project. Click to open in Notion.');
+  const list = document.createElement('div'); list.className = 'support-list';
+  const loading = document.createElement('div'); loading.className = 'support-empty'; loading.textContent = 'Loading…';
+  list.appendChild(loading);
+  shell.appendChild(list);
+  const actions = document.createElement('div'); actions.className = 'modal-actions';
+  const close = document.createElement('button'); close.textContent = 'Close';
+  close.addEventListener('click', closeModal);
+  actions.appendChild(close);
+  shell.appendChild(actions);
+  openModal(shell);
+  try {
+    const data = await apiFetchOk('/api/notion?section=reference');
+    const linked = (data.pages || []).filter(p => Array.isArray(p['Linked Projects']) && p['Linked Projects'].some(id => idsMatch(id, project.id)));
+    list.replaceChildren();
+    if (!linked.length) {
+      const empty = document.createElement('div'); empty.className = 'support-empty';
+      empty.textContent = 'No Reference items linked to this Project yet. From the Reference tab, add or edit an item and set Linked Projects to include this one.';
+      list.appendChild(empty);
+      return;
+    }
+    linked.forEach(p => {
+      const a = document.createElement('a'); a.href = p.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      const name = document.createElement('div'); name.textContent = p.Name || '(unnamed)';
+      a.appendChild(name);
+      const metaTxt = [];
+      if (p.Type) metaTxt.push(p.Type);
+      if (Array.isArray(p.Tags) && p.Tags.length) metaTxt.push('#' + p.Tags.join(' #'));
+      if (p['Date Added']) metaTxt.push(p['Date Added']);
+      if (metaTxt.length) { const m = document.createElement('div'); m.className = 'meta'; m.textContent = metaTxt.join('  ·  '); a.appendChild(m); }
+      list.appendChild(a);
+    });
+  } catch (e) { showError(e.message); list.replaceChildren(textNode('Failed to load Reference items.', 'support-empty')); }
+}
+function idsMatch(a, b) {
+  // Notion sometimes returns relation ids with dashes, sometimes without — normalize.
+  return String(a).replace(/-/g, '') === String(b).replace(/-/g, '');
+}
+
+// Phase 5 — Stuck? drawer. Project Planning Trigger List from System Guides p.4.
+const STUCK_TRIGGERS = {
+  resources:    ['People (internal / external)', 'On-site personnel', 'Money / budget', 'Equipment / tools', 'Materials', 'Workspace / facility', 'Vehicles'],
+  exec:         ['Strategy', 'Objectives', 'Direction', 'Vision', 'Goals', 'Decisions'],
+  admin:        ['Hiring / firing', 'Personnel reviews', 'Insurance', 'Travel', 'Communication channels', 'Filing / records', 'Inventory', 'Supplies'],
+  finance:      ['Cash flow', 'P&L', 'Forecasting', 'Budget vs actual', 'Credit', 'Accounts payable / receivable', 'Reporting'],
+  ops:          ['Process / workflow', 'Production', 'Distribution', 'Quality control', 'Service delivery', 'Logistics'],
+  quality:      ['Customer feedback', 'Internal audit', 'Acceptance criteria', 'Standards compliance', 'Defect tracking'],
+  politics:     ['Internal politics', 'Approval chains', 'Communication plan', 'Sponsors', 'Coalitions'],
+  stakeholders: ['Owners / sponsors', 'Customers', 'Partners', 'Team', 'Adjacent teams', 'Vendors'],
+  legal:        ['Contracts', 'Licenses', 'IP', 'Compliance', 'Liability', 'Regulatory'],
+  space:        ['Facilities', 'Layout', 'Equipment placement', 'Storage', 'Access / security'],
+  research:     ['Discovery', 'Validation', 'Benchmarks', 'Prior art', 'Subject-matter experts'],
+  pr:           ['Public relations', 'Marketing', 'Press', 'Story / narrative', 'Channels'],
+  risks:        ['What could go wrong?', 'Worst-case scenarios', 'Premortem', 'Contingency plans', 'Insurance / hedging'],
+  creative:     ['Brainstorming', 'Patterns from other domains', 'Imagine wild success', 'Ask a domain expert', 'Sleep on it'],
+};
+function populateStuck() {
+  const fill = (id, items) => {
+    const ul = document.getElementById(id); if (!ul) return; ul.replaceChildren();
+    items.forEach(text => { const li = document.createElement('li'); li.textContent = '• ' + text; ul.appendChild(li); });
+  };
+  fill('stuck-resources',    STUCK_TRIGGERS.resources);
+  fill('stuck-exec',         STUCK_TRIGGERS.exec);
+  fill('stuck-admin',        STUCK_TRIGGERS.admin);
+  fill('stuck-finance',      STUCK_TRIGGERS.finance);
+  fill('stuck-ops',          STUCK_TRIGGERS.ops);
+  fill('stuck-quality',      STUCK_TRIGGERS.quality);
+  fill('stuck-politics',     STUCK_TRIGGERS.politics);
+  fill('stuck-stakeholders', STUCK_TRIGGERS.stakeholders);
+  fill('stuck-legal',        STUCK_TRIGGERS.legal);
+  fill('stuck-space',        STUCK_TRIGGERS.space);
+  fill('stuck-research',     STUCK_TRIGGERS.research);
+  fill('stuck-pr',           STUCK_TRIGGERS.pr);
+  fill('stuck-risks',        STUCK_TRIGGERS.risks);
+  fill('stuck-creative',     STUCK_TRIGGERS.creative);
+}
+function toggleStuck() {
+  const panel = document.getElementById('stuck-panel');
+  const open = panel.classList.toggle('open');
+  panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+  document.body.classList.toggle('stuck-open', open);
 }
 
 // ---------------- Phase 4 — Today dashboard -----------------
@@ -516,15 +895,55 @@ function renderStats(tab, pages) {
 
 // Phase 3 — DOM-based renderItems. Replaces the Phase-1 template-string version
 // so untrusted Notion content can't inject markup. Each inbox card carries a
-// 7-button triage row (Mode A); other tabs just show data.
+// 7-button triage row (Mode A); other tabs get a smaller actions row (Phase 5).
 function renderItems(tab, pages) {
   const list = document.getElementById('item-list');
+  const frag = document.createDocumentFragment();
+  // Phase 5 — Active Project Limit warning. Allen recommends max 5–7 active
+  // projects; the dashboard becomes self-policing.
+  if (tab === 'projects') {
+    const active = pages.filter(p => p.Status === 'Active');
+    if (active.length > 7) {
+      const banner = document.createElement('div'); banner.className = 'limit-warning';
+      banner.appendChild(document.createTextNode('⚠'));
+      const strong = document.createElement('strong'); strong.textContent = `${active.length} active projects`;
+      banner.appendChild(strong);
+      banner.appendChild(document.createTextNode(' — Allen recommends max 5–7. Move some to Someday/Maybe or mark Complete.'));
+      frag.appendChild(banner);
+    }
+  }
   if (!pages.length) {
-    list.replaceChildren(textNode('No items yet — use the quick-add bar above to capture one', 'loading'));
+    if (!frag.childElementCount) frag.appendChild(textNode('No items yet — use the quick-add bar above to capture one', 'loading'));
+    list.replaceChildren(frag);
     return;
   }
-  list.replaceChildren(...pages.map(p => buildItemCard(tab, p)));
+  // Phase 5 — sort Next Actions by the picked criterion.
+  let toRender = pages;
+  if (tab === 'nextactions') toRender = applyNextActionsSort(pages);
+  toRender.forEach(p => frag.appendChild(buildItemCard(tab, p)));
+  list.replaceChildren(frag);
 }
+
+// Phase 5 — Next Actions sort. Default 'priority' but Mike can pick Context /
+// Energy / Date. The dropdown lives in the section toolbar; current value is
+// stashed on a module variable so re-renders (after Done/Edit) preserve order.
+let naSortKey = 'priority';
+function applyNextActionsSort(pages) {
+  const copy = pages.slice();
+  if (naSortKey === 'priority') {
+    const rank = { P1: 1, P2: 2, P3: 3, P4: 4 };
+    copy.sort((a, b) => (rank[a.Priority] || 99) - (rank[b.Priority] || 99));
+  } else if (naSortKey === 'context') {
+    copy.sort((a, b) => firstContext(a).localeCompare(firstContext(b)));
+  } else if (naSortKey === 'energy') {
+    copy.sort((a, b) => String(a.Energy || '~').localeCompare(String(b.Energy || '~')));
+  } else if (naSortKey === 'date') {
+    // Newest first (Notion doesn't return createdTime in our serializer, so use Since/Follow Up if present, else Name).
+    copy.sort((a, b) => String(b['Follow Up'] || b.Since || '').localeCompare(String(a['Follow Up'] || a.Since || '')));
+  }
+  return copy;
+}
+function firstContext(p) { return Array.isArray(p.Context) && p.Context.length ? p.Context[0] : '~'; }
 function buildItemCard(tab, p) {
   const card = document.createElement('div'); card.className = 'item-card'; card.dataset.pageId = p.id;
   const header = document.createElement('div'); header.className = 'item-header';
@@ -544,7 +963,54 @@ function buildItemCard(tab, p) {
   });
   if (pieces.length) card.appendChild(meta);
   if (tab === 'inbox') card.appendChild(buildTriageRow(p, card));
+  else card.appendChild(buildActionsRow(tab, p, card));
   return card;
+}
+
+// Phase 5 — per-tab actions row for non-Inbox tabs. Each tab gets at least
+// ✓ Done + ✏ Edit; Projects get extras (Stuck?, Support); Waiting/Someday get
+// a promote button into Next Actions.
+function buildActionsRow(tab, page, card) {
+  const row = document.createElement('div'); row.className = 'actions-row';
+  // ✓ Done — universally archives the page. For tickler items this means
+  // "I dealt with the surfacing"; for waiting/someday it means "received/activated".
+  const done = makeActionBtn('✓ Done', 'donow', 'Mark complete — archives in Notion', async () => {
+    setRowBusy(card, true);
+    try {
+      await apiFetchOk(`/api/notion?action=complete&id=${page.id}`, { method: 'POST' });
+      showOk('✓ Done — archived');
+      removeCard(card);
+    } catch (e) { setRowBusy(card, false); showError(e.message); }
+  });
+  row.appendChild(done);
+  // ✏ Edit — opens the generic Edit modal prefilled with the page's current fields.
+  const edit = makeActionBtn('✏ Edit', 'edit', 'Edit properties — PATCH on Save', () => openEditModal(tab, page));
+  row.appendChild(edit);
+  if (tab === 'projects') {
+    row.appendChild(makeActionBtn('🧠 Stuck?', 'stuck', 'Open the Project Planning Trigger List drawer', () => toggleStuck()));
+    row.appendChild(makeActionBtn('📚 Support', 'support', 'Show linked Reference items (Project Support Material)', () => openSupportModal(page)));
+  }
+  if (tab === 'waitingfor' || tab === 'somedaymaybe') {
+    row.appendChild(makeActionBtn('→ Next Action', 'nextaction', 'Promote into Next Actions', async () => {
+      setRowBusy(card, true);
+      try {
+        await apiFetchOk(`/api/notion?section=${tab}&action=move&id=${page.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ toSection: 'nextactions' }),
+        });
+        showOk('→ Promoted to Next Actions');
+        removeCard(card);
+      } catch (e) { setRowBusy(card, false); showError(e.message); }
+    }));
+  }
+  return row;
+}
+function makeActionBtn(label, action, title, onClick) {
+  const b = document.createElement('button');
+  b.className = 'triage-btn'; b.dataset.action = action; b.textContent = label; b.title = title;
+  b.addEventListener('click', onClick);
+  return b;
 }
 function badgeClassFor(t) {
   if (typeof t !== 'string') return 'badge-p4';
@@ -735,7 +1201,10 @@ function renderWalkthrough() {
 function renderAddForm(tab) {
   const container = document.getElementById('add-form-container');
   container.replaceChildren();
-  if (tab === 'tickler' || tab === 'today' || tab === 'reference') return; // Phase 5 polishes per-tab forms
+  // Phase 5 — Projects use the Natural Planning wizard (section-toolbar button).
+  // Tickler / Today / Reference: no inline add form; capture flows through the
+  // Inbox quick-add bar and then a triage move (per spec — GTD's Clarify step).
+  if (tab === 'tickler' || tab === 'today' || tab === 'reference' || tab === 'projects') return;
 
   const form = document.createElement('div'); form.className = 'add-form';
   const h3 = document.createElement('h3'); h3.textContent = `+ Add to ${TABS[tab].title}`;
@@ -806,10 +1275,9 @@ async function addItem(tab) {
   const getVal = id => document.getElementById(id)?.value;
   if (tab === 'inbox')        { if (getVal('f-priority')) body.priority = getVal('f-priority'); if (getVal('f-area')) body.area = getVal('f-area'); }
   else if (tab === 'goals')   { if (get('f-why')) body.why = get('f-why'); if (getVal('f-status')) body.status = getVal('f-status'); }
-  else if (tab === 'projects'){ if (getVal('f-area')) body.area = getVal('f-area'); if (getVal('f-status')) body.status = getVal('f-status'); if (get('f-next')) body.nextAction = get('f-next'); }
   else if (tab === 'nextactions') { if (getVal('f-priority')) body.priority = getVal('f-priority'); if (getVal('f-context')) body.context = getVal('f-context'); if (getVal('f-energy')) body.energy = getVal('f-energy'); if (getVal('f-area')) body.area = getVal('f-area'); }
   else if (tab === 'waitingfor') { if (get('f-waitingOn')) body.waitingOn = get('f-waitingOn'); if (get('f-need')) body.need = get('f-need'); if (getVal('f-since')) body.since = getVal('f-since'); if (getVal('f-followUp')) body.followUp = getVal('f-followUp'); }
-  else if (tab === 'somedaymaybe') { if (getVal('f-area')) body.area = getVal('f-area'); }
+  else if (tab === 'somedaymaybe') { if (getVal('f-area')) body.somedayArea = getVal('f-area'); }
   try {
     await apiFetchOk(`/api/notion?section=${tab}&action=add`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     document.getElementById('f-name').value = '';
@@ -830,6 +1298,33 @@ function renderSectionToolbar(tab) {
     bar.appendChild(walk);
     const info = document.createElement('span'); info.className = 'toolbar-info';
     info.textContent = 'Tip: press n to focus quick-add  ·  m to toggle MindSweep';
+    bar.appendChild(info);
+  }
+  // Phase 5 — "+ Plan Naturally" wizard entry for Projects. Replaces the
+  // bare add form; Mike can leave optional fields blank and still get a
+  // project created (only Name is required).
+  if (tab === 'projects') {
+    const plan = document.createElement('button');
+    plan.textContent = '+ Plan Naturally';
+    plan.title = "Allen's 5-step Natural Planning Model — Purpose, Vision, Brainstorming, Organizing, Next Action";
+    plan.addEventListener('click', openNaturalPlanningWizard);
+    bar.appendChild(plan);
+    const info = document.createElement('span'); info.className = 'toolbar-info';
+    info.textContent = 'Active project limit: 5–7 (Allen). Click 🧠 Stuck? on any card for the Project Planning Trigger List.';
+    bar.appendChild(info);
+  }
+  // Phase 5 — sort dropdown for Next Actions (Priority/Context/Energy/Date).
+  if (tab === 'nextactions') {
+    const lbl = document.createElement('span'); lbl.className = 'toolbar-info'; lbl.textContent = 'Sort by:';
+    bar.appendChild(lbl);
+    const sel = document.createElement('select'); sel.className = 'sort-select';
+    [['priority','Priority'],['context','Context'],['energy','Energy'],['date','Date']].forEach(([v, lab]) => {
+      const o = document.createElement('option'); o.value = v; o.textContent = lab; if (v === naSortKey) o.selected = true; sel.appendChild(o);
+    });
+    sel.addEventListener('change', () => { naSortKey = sel.value; loadTab('nextactions'); });
+    bar.appendChild(sel);
+    const info = document.createElement('span'); info.className = 'toolbar-info';
+    info.textContent = 'Engage-style filters (Context → Time → Energy → Priority) ship in v1.1.';
     bar.appendChild(info);
   }
 }
@@ -907,6 +1402,8 @@ function toggleMindSweep() {
 // 'Enter' in quick-add submits.
 document.addEventListener('keydown', (e) => {
   const inField = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+  // Phase 5 — Escape closes any open modal first (Edit / Wizard / Support).
+  if (e.key === 'Escape' && !document.getElementById('modal-overlay').hidden) { closeModal(); return; }
   if (e.key === 'Escape' && walkthroughActive) { exitWalkthrough(); return; }
   if (inField) {
     if (e.key === 'Enter' && document.activeElement?.id === 'quick-add-input') { e.preventDefault(); quickCapture(); }
@@ -924,6 +1421,7 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 10000);
 populateMindSweep();
+populateStuck();
 loadTab('today');
 </script>
 </body>

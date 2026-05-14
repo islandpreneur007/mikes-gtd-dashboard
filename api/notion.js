@@ -1,18 +1,19 @@
 // api/notion.js — Vercel serverless proxy to Mike's Notion GTD workspace.
 //
-// Phase 1 surface area:
-//   GET    /api/notion?section=inbox                           -> list (paginated)
-//   POST   /api/notion?section=inbox&action=add                -> create item
-//   PATCH  /api/notion?section=inbox&id=PAGE_ID                -> update properties
-//   POST   /api/notion?action=complete&id=PAGE_ID              -> archive page (mark complete)
-//   POST   /api/notion?section=src&action=move&id=PAGE_ID      -> copy to body.toSection's DB
-//                                                                 then archive the source
+// Surface (sections: inbox, goals, projects, nextactions, waitingfor,
+// somedaymaybe, reference, tickler, today):
+//   GET    /api/notion?section=X                           -> list (paginated)
+//   POST   /api/notion?section=X&action=add                -> create item
+//   PATCH  /api/notion?section=X&id=PAGE_ID                -> update properties
+//   POST   /api/notion?action=complete&id=PAGE_ID          -> archive page
+//   POST   /api/notion?section=src&action=move&id=PAGE_ID  -> copy to body.toSection's DB
+//                                                             then archive the source
 //
 // All requests require an `X-Auth-Token` header that matches process.env.GTD_AUTH_TOKEN.
 // CORS is restricted to the production origin (and http://localhost:* for `vercel dev`).
 //
 // Property-name assumption: every GTD database uses "Name" as its title property.
-// (Pre-existing convention — preserved here so the Phase-1 changes stay surgical.)
+// Phase 2 adds Reference (with relation to Projects), Tickler, and Today DBs.
 
 const { Client } = require('@notionhq/client');
 
@@ -23,6 +24,10 @@ const DB_MAP = {
   nextactions:  '258b99608f484a629f302a115ea2613c',
   waitingfor:   '563c48ebe0464e6e9de7bc17c125f086',
   somedaymaybe: 'c675782834a3474ab52a87352bc23017',
+  // Phase 2 additions:
+  reference:    '8ebef8c68d55429395805049a1aa26fb',
+  tickler:      '05110bb1c62e40c3a3933af98e4b0530',
+  today:        '242dca5f71a74f88951c2865f7085cfe',
 };
 
 const ALLOWED_ORIGINS = new Set([
@@ -33,6 +38,7 @@ const LOCALHOST_ORIGIN = /^http:\/\/localhost(:\d+)?$/;
 // Body-key → [Notion property name, value-builder]. Keep keys camelCase
 // to match what the frontend (and our own `pageToBody`) emits.
 const PROPERTY_BUILDERS = {
+  // Phase 1 — original 6 DBs.
   name:       (v) => ['Name',           { title:        [{ text: { content: String(v) } }] }],
   area:       (v) => ['Area',           { multi_select: toMultiSelect(v) }],
   priority:   (v) => ['Priority',       { select:       { name: String(v) } }],
@@ -45,11 +51,41 @@ const PROPERTY_BUILDERS = {
   since:      (v) => ['Since',          { date:         { start: String(v) } }],
   followUp:   (v) => ['Follow Up',      { date:         { start: String(v) } }],
   nextAction: (v) => ['Next Action',    { rich_text:    [{ text: { content: String(v) } }] }],
+
+  // Phase 2 — Reference DB.
+  type:           (v) => ['Type',            { select:       { name: String(v) } }],
+  tags:           (v) => ['Tags',            { multi_select: toMultiSelect(v) }],
+  content:        (v) => ['Content',         { rich_text:    [{ text: { content: String(v) } }] }],
+  notes:          (v) => ['Notes',           { rich_text:    [{ text: { content: String(v) } }] }],
+  dateAdded:      (v) => ['Date Added',      { date:         { start: String(v) } }],
+  linkedProjects: (v) => ['Linked Projects', { relation:     toRelationArray(v) }],
+
+  // Phase 2 — Tickler DB.
+  surfaceOn:       (v) => ['Surface On',              { date:      { start: String(v) } }],
+  actionOnSurface: (v) => ['Action When It Surfaces', { rich_text: [{ text: { content: String(v) } }] }],
+  sourceContext:   (v) => ['Source / Context',        { rich_text: [{ text: { content: String(v) } }] }],
+
+  // Phase 2 — Today DB. (`notes` is reused from Reference; both DBs name the property "Notes".)
+  date:               (v) => ['Date',                 { date:      { start: String(v) } }],
+  outcome1:           (v) => ['Outcome 1',            { rich_text: [{ text: { content: String(v) } }] }],
+  outcome2:           (v) => ['Outcome 2',            { rich_text: [{ text: { content: String(v) } }] }],
+  outcome3:           (v) => ['Outcome 3',            { rich_text: [{ text: { content: String(v) } }] }],
+  itemsCompleted:     (v) => ['Items Completed',      { rich_text: [{ text: { content: String(v) } }] }],
+  itemsMovedForward:  (v) => ['Items Moved Forward',  { rich_text: [{ text: { content: String(v) } }] }],
+  itemsStillOpen:     (v) => ['Items Still Open',     { rich_text: [{ text: { content: String(v) } }] }],
+  captureForTomorrow: (v) => ['Capture for Tomorrow', { rich_text: [{ text: { content: String(v) } }] }],
 };
 
 function toMultiSelect(v) {
   const list = Array.isArray(v) ? v : String(v).split(',');
   return list.map((x) => ({ name: String(x).trim() })).filter((x) => x.name);
+}
+
+// Notion relations are arrays of {id}. Accept either a single page id, a
+// comma-separated string, or an array of ids.
+function toRelationArray(v) {
+  const list = Array.isArray(v) ? v : String(v).split(',');
+  return list.map((x) => String(x).trim()).filter(Boolean).map((id) => ({ id }));
 }
 
 function buildProperties(body) {
@@ -73,17 +109,25 @@ function serializePage(page) {
     else if (val.multi_select?.length) out[key] = val.multi_select.map((s) => s.name);
     else if (val.status?.name)         out[key] = val.status.name;
     else if (val.date?.start)          out[key] = val.date.start;
+    else if (val.relation?.length)     out[key] = val.relation.map((r) => r.id);
     else if (val.formula?.type === 'string') out[key] = val.formula.string;
     else if (val.number != null)       out[key] = val.number;
     else if (val.checkbox != null)     out[key] = val.checkbox;
+    else if (val.url)                  out[key] = val.url;
+    else if (val.email)                out[key] = val.email;
+    else if (val.phone_number)         out[key] = val.phone_number;
   }
   return out;
 }
 
 // Inverse of buildProperties — used when moving a page across databases so
 // we can re-emit its properties on the target DB through buildProperties().
+// Any field whose property name doesn't exist on the target DB will be
+// rejected by Notion at create time; that's an acceptable Phase-2 limitation
+// (Phase 5 will filter by target schema).
 function pageToBody(serialized) {
   return {
+    // Phase 1.
     name:       serialized.Name,
     area:       serialized.Area,
     priority:   serialized.Priority,
@@ -96,6 +140,24 @@ function pageToBody(serialized) {
     since:      serialized.Since,
     followUp:   serialized['Follow Up'],
     nextAction: serialized['Next Action'],
+    // Phase 2 — Reference / Tickler / Today.
+    type:               serialized.Type,
+    tags:               serialized.Tags,
+    content:            serialized.Content,
+    notes:              serialized.Notes,
+    dateAdded:          serialized['Date Added'],
+    linkedProjects:     serialized['Linked Projects'],
+    surfaceOn:          serialized['Surface On'],
+    actionOnSurface:    serialized['Action When It Surfaces'],
+    sourceContext:      serialized['Source / Context'],
+    date:               serialized.Date,
+    outcome1:           serialized['Outcome 1'],
+    outcome2:           serialized['Outcome 2'],
+    outcome3:           serialized['Outcome 3'],
+    itemsCompleted:     serialized['Items Completed'],
+    itemsMovedForward:  serialized['Items Moved Forward'],
+    itemsStillOpen:     serialized['Items Still Open'],
+    captureForTomorrow: serialized['Capture for Tomorrow'],
   };
 }
 

@@ -58,6 +58,9 @@ const PROPERTY_BUILDERS = {
   content:        (v) => ['Content',         { rich_text:    [{ text: { content: String(v) } }] }],
   notes:          (v) => ['Notes',           { rich_text:    [{ text: { content: String(v) } }] }],
   dateAdded:      (v) => ['Date Added',      { date:         { start: String(v) } }],
+  // Reference DB uses "Area of Focus" (longer name) rather than the Phase-1
+  // "Area" property — separate camelCase key so both work independently.
+  areaOfFocus:    (v) => ['Area of Focus',   { multi_select: toMultiSelect(v) }],
   linkedProjects: (v) => ['Linked Projects', { relation:     toRelationArray(v) }],
 
   // Phase 2 — Tickler DB.
@@ -146,6 +149,7 @@ function pageToBody(serialized) {
     content:            serialized.Content,
     notes:              serialized.Notes,
     dateAdded:          serialized['Date Added'],
+    areaOfFocus:        serialized['Area of Focus'],
     linkedProjects:     serialized['Linked Projects'],
     surfaceOn:          serialized['Surface On'],
     actionOnSurface:    serialized['Action When It Surfaces'],

@@ -157,6 +157,23 @@ body.stuck-open .main{padding-left:360px}
 /* Phase 5 — Generic per-card actions row (for non-Inbox tabs). Reuses triage-btn styling. */
 .actions-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 
+/* Phase 6 — Reference filter chips + tickler group headers. */
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.filter-chip{padding:4px 10px;border-radius:14px;border:1px solid #2d3139;background:#0f1117;color:#9ba1ab;cursor:pointer;font-size:0.75rem}
+.filter-chip:hover{border-color:#7ec8a3;color:#7ec8a3}
+.filter-chip.active{background:#7ec8a3;color:#0f1117;border-color:#7ec8a3;font-weight:600}
+.filter-chips .chip-label{font-size:0.74rem;color:#9ba1ab;margin-right:4px}
+.filter-chips input.tag-input{padding:4px 10px;border-radius:14px;border:1px solid #2d3139;background:#0f1117;color:#e8eaed;font-size:0.78rem;min-width:140px}
+.filter-chips input.tag-input:focus{outline:none;border-color:#7ec8a3}
+.group-header{margin:14px 0 6px 0;padding:4px 10px;font-size:0.78rem;color:#9ba1ab;font-weight:600;border-left:3px solid #2d3139}
+.group-header.past   {border-left-color:#e53e3e;color:#fc8181}
+.group-header.today  {border-left-color:#7ec8a3;color:#7ec8a3}
+.group-header.future {border-left-color:#3182ce;color:#9ec5e6}
+.reference-view{font-size:0.9rem;color:#c4cad3;line-height:1.5;white-space:pre-wrap;background:#0f1117;border:1px solid #2d3139;border-radius:6px;padding:12px;margin-bottom:12px}
+.reference-view a{color:#7ec8a3;word-break:break-all}
+.reference-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.reference-meta span{font-size:0.72rem;color:#9ba1ab;background:#0f1117;padding:3px 8px;border-radius:4px}
+
 /* Phase 4 — Today dashboard. Each "section" is a card; fields auto-save on blur. */
 .today-section{background:#1a1d27;border-radius:10px;padding:18px;margin-bottom:16px;border:1px solid #2d3139}
 .today-section h3{font-size:0.95rem;color:#7ec8a3;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -612,6 +629,70 @@ function idsMatch(a, b) {
   return String(a).replace(/-/g, '') === String(b).replace(/-/g, '');
 }
 
+// Phase 6 — only http(s) URLs are safe to set as a link href. Mike (or anyone
+// with Notion write access) could otherwise put `javascript:fetch(/api/notion...)`
+// in a Type=URL item's Content and have it run in the dashboard origin on click.
+// `mailto:` / `tel:` are intentionally NOT allowlisted — they're not common
+// Reference DB content; revisit if Mike ever stores them.
+function isSafeHttpUrl(s) {
+  const trimmed = String(s || '').trim();
+  if (!/^https?:\/\//i.test(trimmed)) return false;
+  try { const u = new URL(trimmed); return u.protocol === 'http:' || u.protocol === 'https:'; }
+  catch { return false; }
+}
+
+// Phase 6 — Reference item viewer modal. Shows Type/Tags/Date Added chips,
+// then the Content body (linkified when Type=URL), then Notes if present, then
+// a button row that links out to Notion + closes the modal.
+function openReferenceModal(page) {
+  const shell = makeModalShell(`📖 ${page.Name || '(unnamed)'}`, null);
+  const meta = document.createElement('div'); meta.className = 'reference-meta';
+  const addMeta = (text) => { if (!text) return; const s = document.createElement('span'); s.textContent = text; meta.appendChild(s); };
+  if (page.Type) addMeta('🏷 ' + page.Type);
+  if (Array.isArray(page.Tags) && page.Tags.length) addMeta('# ' + page.Tags.join(' / '));
+  if (page['Date Added']) addMeta('📅 Added ' + page['Date Added']);
+  if (Array.isArray(page['Area of Focus']) && page['Area of Focus'].length) addMeta('📌 ' + page['Area of Focus'].join(', '));
+  if (Array.isArray(page['Linked Projects']) && page['Linked Projects'].length) addMeta('🔗 ' + page['Linked Projects'].length + ' linked project(s)');
+  if (meta.childElementCount) shell.appendChild(meta);
+
+  const view = document.createElement('div'); view.className = 'reference-view';
+  const content = page.Content || '';
+  if (page.Type === 'URL' && content && isSafeHttpUrl(content)) {
+    // Linkify ONLY http(s) URLs — any other scheme (javascript:, data:, etc.)
+    // is rendered as plain text to prevent XSS via a Notion-edited Type=URL item.
+    const a = document.createElement('a'); a.href = content; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    a.textContent = content;
+    view.appendChild(a);
+  } else if (content) {
+    view.textContent = content;
+  } else {
+    view.textContent = '(no content)';
+    view.style.fontStyle = 'italic';
+    view.style.color = '#5a6068';
+  }
+  shell.appendChild(view);
+
+  if (page.Notes) {
+    const notesLabel = document.createElement('label'); notesLabel.textContent = 'Notes';
+    shell.appendChild(notesLabel);
+    const notesView = document.createElement('div'); notesView.className = 'reference-view';
+    notesView.textContent = page.Notes;
+    shell.appendChild(notesView);
+  }
+
+  const actions = document.createElement('div'); actions.className = 'modal-actions';
+  if (page.url) {
+    const openInNotion = document.createElement('button'); openInNotion.textContent = 'Open in Notion ↗';
+    openInNotion.addEventListener('click', () => window.open(page.url, '_blank', 'noopener,noreferrer'));
+    actions.appendChild(openInNotion);
+  }
+  const close = document.createElement('button'); close.textContent = 'Close';
+  close.addEventListener('click', closeModal);
+  actions.appendChild(close);
+  shell.appendChild(actions);
+  openModal(shell);
+}
+
 // Phase 5 — Stuck? drawer. Project Planning Trigger List from System Guides p.4.
 const STUCK_TRIGGERS = {
   resources:    ['People (internal / external)', 'On-site personnel', 'Money / budget', 'Equipment / tools', 'Materials', 'Workspace / facility', 'Vehicles'],
@@ -842,6 +923,20 @@ function textNode(text, cls) {
   const d = document.createElement('div'); if (cls) d.className = cls; d.textContent = text; return d;
 }
 
+// Phase 6 — parse Notion's 'YYYY-MM-DD' date strings as local midnight.
+// `new Date('2026-05-14')` parses as UTC midnight; in AST (UTC-4) that becomes
+// 8pm May 13 local. Date-only fields must be local-relative or the grouping
+// bucketing shifts by a day.
+function parseLocalDate(s) {
+  if (!s) return null;
+  const parts = String(s).slice(0, 10).split('-');
+  if (parts.length < 3) return null;
+  const y = +parts[0], m = +parts[1], d = +parts[2];
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+function todayLocalMidnight() { const t = new Date(); t.setHours(0,0,0,0); return t; }
+
 // Stat counters: exact match per tab (Phase 1 fix), with new logic for the
 // Phase 2 DBs. waitingfor uses date comparison; tickler/today bucket by date
 // relative to today; reference buckets by Type.
@@ -852,28 +947,26 @@ const STAT_MATCHERS = {
   nextactions:  (p, k) => p.Priority === k,
   somedaymaybe: (p, k) => p.Status === k,
   waitingfor:   (p, k) => {
-    const fu = p['Follow Up'];
-    const isDue = fu && new Date(fu) <= new Date();
+    const fu = parseLocalDate(p['Follow Up']);
+    const isDue = fu && fu.getTime() <= todayLocalMidnight().getTime();
     if (k === 'Follow-up due') return Boolean(isDue);
     if (k === 'Waiting') return !isDue;
     return false;
   },
   reference:    (p, k) => p.Type === k,
   tickler:      (p, k) => {
-    const s = p['Surface On'];
-    if (!s) return false;
-    const today = new Date(); today.setHours(0,0,0,0);
-    const d = new Date(s); d.setHours(0,0,0,0);
+    const d = parseLocalDate(p['Surface On']);
+    if (!d) return false;
+    const today = todayLocalMidnight();
     if (k === 'Surfacing today') return d.getTime() === today.getTime();
     if (k === 'Future')          return d.getTime() >  today.getTime();
     if (k === 'Past due')        return d.getTime() <  today.getTime();
     return false;
   },
   today:        (p, k) => {
-    const d = p.Date;
-    if (!d) return false;
-    const today = new Date(); today.setHours(0,0,0,0);
-    const x = new Date(d); x.setHours(0,0,0,0);
+    const x = parseLocalDate(p.Date);
+    if (!x) return false;
+    const today = todayLocalMidnight();
     if (k === 'Today') return x.getTime() === today.getTime();
     if (k === 'Past')  return x.getTime() <  today.getTime();
     return false;
@@ -918,9 +1011,65 @@ function renderItems(tab, pages) {
     return;
   }
   // Phase 5 — sort Next Actions by the picked criterion.
+  // Phase 6 — Reference: filter by Type chip + Tag substring. Tickler:
+  // group by past-due / surfacing-today / future, sorted by Surface On.
   let toRender = pages;
   if (tab === 'nextactions') toRender = applyNextActionsSort(pages);
+  if (tab === 'reference')   toRender = applyReferenceFilter(pages);
+  if (tab === 'tickler')     return renderTicklerGrouped(frag, list, pages);
   toRender.forEach(p => frag.appendChild(buildItemCard(tab, p)));
+  list.replaceChildren(frag);
+}
+
+// Phase 6 — apply current reference filter state to the page list.
+function applyReferenceFilter(pages) {
+  let out = pages;
+  if (referenceTypeFilter && referenceTypeFilter !== 'All') {
+    out = out.filter(p => p.Type === referenceTypeFilter);
+  }
+  if (referenceTagFilter) {
+    const needle = referenceTagFilter.toLowerCase();
+    out = out.filter(p => Array.isArray(p.Tags) && p.Tags.some(t => String(t).toLowerCase().includes(needle)));
+  }
+  return out;
+}
+
+// Phase 6 — Tickler: render three groups (past due / today / future), each
+// sorted ascending by Surface On. Past-due is on top so Mike can clear the
+// backlog first. Uses parseLocalDate so timezone offsets don't shift items
+// by a day.
+function renderTicklerGrouped(frag, list, pages) {
+  const today = todayLocalMidnight();
+  const dated = pages.filter(p => p['Surface On']);
+  const undated = pages.filter(p => !p['Surface On']);
+  const past = [], now = [], future = [];
+  dated.forEach(p => {
+    const d = parseLocalDate(p['Surface On']);
+    if (!d) { undated.push(p); return; } // malformed Surface On → show under Undated rather than hiding silently
+    if (d.getTime() < today.getTime())        past.push(p);
+    else if (d.getTime() === today.getTime()) now.push(p);
+    else                                      future.push(p);
+  });
+  const ascend = (a, b) => String(a['Surface On']).localeCompare(String(b['Surface On']));
+  past.sort(ascend); now.sort(ascend); future.sort(ascend);
+  const addGroup = (label, items, cls) => {
+    if (!items.length) return;
+    const h = document.createElement('div'); h.className = 'group-header ' + cls;
+    h.textContent = `${label} (${items.length})`;
+    frag.appendChild(h);
+    items.forEach(p => frag.appendChild(buildItemCard('tickler', p)));
+  };
+  addGroup('Past due',          past,   'past');
+  addGroup('Surfacing today',   now,    'today');
+  addGroup('Future',            future, 'future');
+  if (undated.length) {
+    const h = document.createElement('div'); h.className = 'group-header'; h.textContent = `Undated (${undated.length})`;
+    frag.appendChild(h);
+    undated.forEach(p => frag.appendChild(buildItemCard('tickler', p)));
+  }
+  if (!frag.childElementCount) {
+    frag.appendChild(textNode('No tickler items yet — defer an Inbox item with a date to seed this list.', 'loading'));
+  }
   list.replaceChildren(frag);
 }
 
@@ -928,6 +1077,11 @@ function renderItems(tab, pages) {
 // Energy / Date. The dropdown lives in the section toolbar; current value is
 // stashed on a module variable so re-renders (after Done/Edit) preserve order.
 let naSortKey = 'priority';
+
+// Phase 6 — Reference filter state. Type chip + freeform tag substring.
+// Tag matching is case-insensitive substring on any tag in the item's Tags array.
+let referenceTypeFilter = 'All';
+let referenceTagFilter  = '';
 function applyNextActionsSort(pages) {
   const copy = pages.slice();
   if (naSortKey === 'priority') {
@@ -989,6 +1143,10 @@ function buildActionsRow(tab, page, card) {
   if (tab === 'projects') {
     row.appendChild(makeActionBtn('🧠 Stuck?', 'stuck', 'Open the Project Planning Trigger List drawer', () => toggleStuck()));
     row.appendChild(makeActionBtn('📚 Support', 'support', 'Show linked Reference items (Project Support Material)', () => openSupportModal(page)));
+  }
+  // Phase 6 — Reference cards get an Open button that pops a content modal.
+  if (tab === 'reference') {
+    row.appendChild(makeActionBtn('📖 Open', 'open', 'View full content / open the URL', () => openReferenceModal(page)));
   }
   if (tab === 'waitingfor' || tab === 'somedaymaybe') {
     row.appendChild(makeActionBtn('→ Next Action', 'nextaction', 'Promote into Next Actions', async () => {
@@ -1311,6 +1469,36 @@ function renderSectionToolbar(tab) {
     bar.appendChild(plan);
     const info = document.createElement('span'); info.className = 'toolbar-info';
     info.textContent = 'Active project limit: 5–7 (Allen). Click 🧠 Stuck? on any card for the Project Planning Trigger List.';
+    bar.appendChild(info);
+  }
+  // Phase 6 — Reference: Type filter chips + Tag substring filter.
+  if (tab === 'reference') {
+    const chips = document.createElement('div'); chips.className = 'filter-chips';
+    const label = document.createElement('span'); label.className = 'chip-label'; label.textContent = 'Type:'; chips.appendChild(label);
+    ['All','Note','URL','File','Contact','Other'].forEach(t => {
+      const c = document.createElement('button'); c.className = 'filter-chip' + (referenceTypeFilter === t ? ' active' : ''); c.textContent = t;
+      c.addEventListener('click', () => { referenceTypeFilter = t; loadTab('reference'); });
+      chips.appendChild(c);
+    });
+    const tagLabel = document.createElement('span'); tagLabel.className = 'chip-label'; tagLabel.textContent = '  Tag filter:';
+    chips.appendChild(tagLabel);
+    const tag = document.createElement('input'); tag.type = 'text'; tag.className = 'tag-input'; tag.placeholder = 'substring…'; tag.value = referenceTagFilter;
+    // 250ms debounce so a fast typist doesn't fire one API GET per keystroke.
+    let tagTimer = null;
+    tag.addEventListener('input', () => {
+      if (tagTimer) clearTimeout(tagTimer);
+      tagTimer = setTimeout(() => { referenceTagFilter = tag.value; loadTab('reference'); }, 250);
+    });
+    chips.appendChild(tag);
+    bar.appendChild(chips);
+    const info = document.createElement('span'); info.className = 'toolbar-info';
+    info.textContent = 'Tip: click 📖 Open on any card for the full content; URLs become clickable links.';
+    bar.appendChild(info);
+  }
+  // Phase 6 — Tickler info: grouping is automatic (past due / today / future / undated).
+  if (tab === 'tickler') {
+    const info = document.createElement('span'); info.className = 'toolbar-info';
+    info.textContent = 'Items grouped by Surface On: past due on top, then today, then future. ✓ Done archives the tickler row.';
     bar.appendChild(info);
   }
   // Phase 5 — sort dropdown for Next Actions (Priority/Context/Energy/Date).

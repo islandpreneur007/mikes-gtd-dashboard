@@ -90,6 +90,31 @@ const TABS = {
 };
 const AREAS = ['Career / Work','Health / Fitness','Relationships','Finances','Learning / Growth','Home / Logistics','Personal Systems'];
 const PRIORITIES = { inbox: ['P1','P2','P3','P4'], goals: ['🟢','🟡','🔴'], projects: ['Active','Waiting','Stalled','Someday'], nextactions: ['P1','P2','P3','P4'], waitingfor: ['Waiting'], somedaymaybe: ['Active','Someday'] };
+
+// Phase 1 auth: the serverless proxy now requires X-Auth-Token on every request.
+// We can't ship a secret inside a static HTML page, so the token lives in
+// localStorage and is set once per device via a prompt. Server-side, the token
+// must match the GTD_AUTH_TOKEN env var on Vercel.
+const TOKEN_KEY = 'gtd-token';
+function getToken() {
+  let t = localStorage.getItem(TOKEN_KEY);
+  if (!t) {
+    t = (window.prompt('Enter your GTD dashboard token (one-time per device):') || '').trim();
+    if (t) localStorage.setItem(TOKEN_KEY, t);
+  }
+  return t || '';
+}
+function clearToken() { localStorage.removeItem(TOKEN_KEY); }
+async function apiFetch(url, options = {}) {
+  const headers = { ...(options.headers || {}), 'X-Auth-Token': getToken() };
+  const r = await fetch(url, { ...options, headers });
+  if (r.status === 401) {
+    clearToken();
+    showError('Auth failed — token cleared. Reload the page to re-enter it.');
+  }
+  return r;
+}
+
 let currentTab = 'inbox';
 function switchTab(tab) {
   currentTab = tab;
@@ -108,7 +133,7 @@ async function loadTab(tab) {
   document.getElementById('stats-bar').innerHTML = '';
   renderAddForm(tab);
   try {
-    const r = await fetch(`/api/notion?section=${tab}`);
+    const r = await apiFetch(`/api/notion?section=${tab}`);
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || 'Failed to load');
     renderItems(tab, data.pages || []);
@@ -118,15 +143,38 @@ async function loadTab(tab) {
     document.getElementById('item-list').innerHTML = '<div class="loading">Error loading data — check API connection</div>';
   }
 }
+// Phase 1 fix: exact match per tab, not substring. The previous implementation
+// did `v.includes(k[0])` — so 'P1' matched any string containing 'P', meaning
+// every P2/P3/P4 item double-counted into the P1 bucket. If a tab's stat label
+// doesn't match the actual property value stored in Notion, that bucket shows
+// 0 — the honest answer until Phase 5 reconciles status conventions per DB.
+const STAT_MATCHERS = {
+  inbox:        (p, k) => p.Status === k,
+  goals:        (p, k) => p.Status === k,
+  projects:     (p, k) => p.Status === k,
+  nextactions:  (p, k) => p.Priority === k,
+  somedaymaybe: (p, k) => p.Status === k,
+  waitingfor:   (p, k) => {
+    const followUp = p['Follow Up'];
+    const isDue = followUp && new Date(followUp) <= new Date();
+    if (k === 'Follow-up due') return Boolean(isDue);
+    if (k === 'Waiting') return !isDue;
+    return false;
+  },
+};
 function renderStats(tab, pages) {
   const s = TABS[tab].stats;
-  const counts = {};
-  s.forEach(k => { counts[k] = 0; });
-  pages.forEach(p => {
-    const v = p.Priority || p.Status || p['Why It Matters'] || '';
-    for (const k of s) { if (v.includes(k[0]) || v.includes(k)) counts[k]++; }
-  });
-  document.getElementById('stats-bar').innerHTML = s.map(k => `<div class="stat-card"><div class="num">${counts[k]}</div><div class="label">${k}</div></div>`).join('');
+  const matcher = STAT_MATCHERS[tab] || ((p, k) => p.Status === k);
+  const counts = Object.fromEntries(s.map(k => [k, 0]));
+  pages.forEach(p => { for (const k of s) { if (matcher(p, k)) counts[k]++; } });
+  const bar = document.getElementById('stats-bar');
+  bar.replaceChildren(...s.map(k => {
+    const card = document.createElement('div'); card.className = 'stat-card';
+    const num  = document.createElement('div'); num.className  = 'num';   num.textContent  = counts[k];
+    const lbl  = document.createElement('div'); lbl.className  = 'label'; lbl.textContent  = k;
+    card.append(num, lbl);
+    return card;
+  }));
 }
 function renderItems(tab, pages) {
   if (!pages.length) {
@@ -217,7 +265,7 @@ async function addItem(tab) {
     if (getVal('f-area')) body.area = getVal('f-area');
   }
   try {
-    const r = await fetch(`/api/notion?section=${tab}&action=add`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const r = await apiFetch(`/api/notion?section=${tab}&action=add`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || 'Failed to add');
     document.getElementById('f-name').value = '';

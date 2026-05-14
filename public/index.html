@@ -7,60 +7,118 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e8eaed;min-height:100vh}
-header{background:#1a1d27;padding:20px 30px;border-bottom:2px solid #2d3139;display:flex;justify-content:space-between;align-items:center}
-header h1{font-size:1.4rem;color:#fff}
-.header-status span{margin-left:15px;font-size:0.8rem;color:#7ec8a3}
-.tabs{display:flex;background:#1a1d27;border-bottom:1px solid #2d3139;overflow-x:auto}
-.tab{padding:12px 24px;cursor:pointer;border:none;background:none;color:#9ba1ab;font-size:0.95rem;white-space:nowrap;border-bottom:3px solid transparent}
+header{background:#1a1d27;padding:16px 24px;border-bottom:2px solid #2d3139;position:sticky;top:0;z-index:10;display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center}
+header h1{font-size:1.2rem;color:#fff;white-space:nowrap}
+.quick-add{display:flex;gap:6px;align-items:center;flex:1;max-width:680px}
+.quick-add input{flex:1;padding:8px 12px;border-radius:6px;border:1px solid #2d3139;background:#0f1117;color:#e8eaed;font-size:0.9rem}
+.quick-add input:focus{outline:none;border-color:#7ec8a3}
+.quick-add button{padding:8px 14px;border-radius:6px;border:none;background:#7ec8a3;color:#0f1117;font-weight:600;cursor:pointer;font-size:0.85rem;white-space:nowrap}
+.quick-add button:hover{background:#6bb890}
+.quick-add .hint{font-size:0.7rem;color:#5a6068;margin-left:6px;white-space:nowrap}
+.header-status{display:flex;gap:14px;align-items:center;font-size:0.8rem;color:#9ba1ab}
+.header-status .clock{color:#9ba1ab}
+.header-status .sync{color:#7ec8a3}
+.header-status button{padding:6px 10px;border-radius:6px;border:1px solid #2d3139;background:transparent;color:#e8eaed;cursor:pointer;font-size:0.8rem}
+.header-status button:hover{border-color:#7ec8a3;color:#7ec8a3}
+.tabs{display:flex;background:#1a1d27;border-bottom:1px solid #2d3139;overflow-x:auto;position:sticky;top:65px;z-index:9}
+.tab{padding:12px 20px;cursor:pointer;border:none;background:none;color:#9ba1ab;font-size:0.95rem;white-space:nowrap;border-bottom:3px solid transparent}
 .tab:hover{color:#e8eaed}
 .tab.active{color:#7ec8a3;border-bottom-color:#7ec8a3;font-weight:600}
-.main{padding:24px}
+.main{padding:24px;padding-right:24px;transition:padding-right .2s ease}
+body.mindsweep-open .main{padding-right:340px}
 .section{display:none}
 .section.active{display:block}
-.stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
-.stat-card{background:#1a1d27;border-radius:10px;padding:16px;border:1px solid #2d3139;text-align:center}
-.stat-card .num{font-size:2rem;font-weight:700;color:#7ec8a3}
-.stat-card .label{font-size:0.75rem;color:#9ba1ab;margin-top:4px}
-.item-list{max-height:65vh;overflow-y:auto}
-.item-card{background:#1a1d27;border-radius:8px;padding:14px 16px;margin-bottom:10px;border:1px solid #2d3139;transition:border-color 0.2s}
+.stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:#1a1d27;border-radius:10px;padding:14px;border:1px solid #2d3139;text-align:center}
+.stat-card .num{font-size:1.8rem;font-weight:700;color:#7ec8a3}
+.stat-card .label{font-size:0.72rem;color:#9ba1ab;margin-top:4px}
+.section-toolbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.section-toolbar button{padding:8px 14px;border-radius:6px;border:1px solid #2d3139;background:transparent;color:#e8eaed;cursor:pointer;font-size:0.85rem}
+.section-toolbar button:hover{border-color:#7ec8a3;color:#7ec8a3}
+.section-toolbar .toolbar-info{font-size:0.78rem;color:#9ba1ab;margin-left:auto}
+.item-list{max-height:62vh;overflow-y:auto}
+.item-card{background:#1a1d27;border-radius:8px;padding:12px 14px;margin-bottom:10px;border:1px solid #2d3139;transition:border-color 0.2s}
 .item-card:hover{border-color:#3d4149}
-.item-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
-.item-name{font-size:0.95rem;font-weight:600;color:#e8eaed}
-.item-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:600}
+.item-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
+.item-name{font-size:0.95rem;font-weight:600;color:#e8eaed;word-break:break-word}
+.item-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:600;white-space:nowrap}
 .badge-p1{background:#e53e3e;color:#fff}
 .badge-p2{background:#dd9e14;color:#fff}
 .badge-p3{background:#3182ce;color:#fff}
 .badge-p4{background:#4a5568;color:#9ba1ab}
 .badge-new{background:#7ec8a3;color:#0f1117}
-.badge-processing{background:#dd9e14;color:#0f1117}
-.badge-actionable{background:#3182ce;color:#fff}
-.badge-done{background:#4a5568;color:#9ba1ab}
-.meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 .meta span{font-size:0.72rem;color:#9ba1ab;background:#0f1117;padding:2px 8px;border-radius:6px}
-.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
-.status-green{background:#7ec8a3}
-.status-yellow{background:#dd9e14}
-.status-red{background:#e53e3e}
-.add-form{background:#1a1d27;border-radius:10px;padding:16px;margin-bottom:20px;border:1px solid #2d3139}
-.add-form h3{font-size:0.9rem;color:#7ec8a3;margin-bottom:12px}
-.add-form-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.add-form input{flex:1;min-width:160px;padding:8px 12px;border-radius:6px;border:1px solid #2d3139;background:#0f1117;color:#e8eaed;font-size:0.85rem}
-.add-form input:focus{outline:none;border-color:#7ec8a3}
-.add-form select{padding:8px 12px;border-radius:6px;border:1px solid #2d3139;background:#0f1117;color:#e8eaed;font-size:0.85rem}
-.add-form button{padding:8px 20px;border-radius:6px;border:none;background:#7ec8a3;color:#0f1117;font-weight:600;cursor:pointer;font-size:0.85rem}
+/* Phase 3: triage button row on inbox cards (Mode A — card buttons).
+   Compact buttons mapped to Allen's Clarify decision tree. */
+.triage-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.triage-btn{padding:6px 10px;border-radius:6px;border:1px solid #2d3139;background:#0f1117;color:#e8eaed;cursor:pointer;font-size:0.78rem;white-space:nowrap;transition:all 0.12s}
+.triage-btn:hover{background:#2d3139;border-color:#7ec8a3}
+.triage-btn[data-action="donow"]{border-color:#7ec8a3;color:#7ec8a3}
+.triage-btn[data-action="nextaction"]{border-color:#dd9e14}
+.triage-btn[data-action="projects"]{border-color:#dd9e14}
+.triage-btn[data-action="waitingfor"]{border-color:#3182ce}
+.triage-btn[data-action="somedaymaybe"]{border-color:#4a5568}
+.triage-btn[data-action="reference"]{border-color:#4a5568}
+.triage-btn[data-action="trash"]{border-color:#e53e3e;color:#fc8181}
+.triage-btn:disabled{opacity:.4;cursor:wait}
+/* Defer-split inline popover: appears below the NA button when clicked. */
+.defer-popover{margin-top:10px;padding:10px;background:#0f1117;border:1px solid #3182ce;border-radius:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.defer-popover input[type=date]{padding:6px 8px;border-radius:6px;border:1px solid #2d3139;background:#1a1d27;color:#e8eaed;font-size:0.8rem}
+.defer-popover button{padding:6px 12px;border-radius:6px;border:1px solid #2d3139;background:#0f1117;color:#e8eaed;cursor:pointer;font-size:0.78rem}
+.defer-popover .defer-help{font-size:0.72rem;color:#9ba1ab;flex-basis:100%}
+.add-form{background:#1a1d27;border-radius:10px;padding:14px;margin-bottom:16px;border:1px solid #2d3139}
+.add-form h3{font-size:0.85rem;color:#7ec8a3;margin-bottom:10px}
+.add-form-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.add-form input,.add-form select{padding:8px 12px;border-radius:6px;border:1px solid #2d3139;background:#0f1117;color:#e8eaed;font-size:0.85rem}
+.add-form input{flex:1;min-width:160px}
+.add-form input:focus,.add-form select:focus{outline:none;border-color:#7ec8a3}
+.add-form button{padding:8px 18px;border-radius:6px;border:none;background:#7ec8a3;color:#0f1117;font-weight:600;cursor:pointer;font-size:0.85rem}
 .add-form button:hover{background:#6bb890}
 .loading{text-align:center;padding:40px;color:#9ba1ab}
 .loading::after{content:' ...';animation:dots 1.5s infinite}
 @keyframes dots{0%{content:' .'}40%{content:' ..'}80%{content:' ...'}}
 .error-msg{padding:12px;background:#3d1a1a;border:1px solid #e53e3e;border-radius:8px;color:#fc8181;margin-bottom:16px;font-size:0.85rem}
+.toast-ok{padding:10px 14px;background:#1a2e22;border:1px solid #7ec8a3;border-radius:8px;color:#a7ddc1;margin-bottom:12px;font-size:0.82rem}
+
+/* MindSweep right-rail drawer — toggled via header button or 'm' key. */
+.mindsweep-panel{position:fixed;top:0;right:0;width:320px;height:100vh;background:#1a1d27;border-left:1px solid #2d3139;padding:20px 18px;overflow-y:auto;transform:translateX(100%);transition:transform .2s ease;z-index:8}
+.mindsweep-panel.open{transform:translateX(0)}
+.mindsweep-panel h3{font-size:0.95rem;color:#7ec8a3;margin-bottom:6px}
+.mindsweep-panel .ms-help{font-size:0.74rem;color:#9ba1ab;margin-bottom:14px;line-height:1.4}
+.mindsweep-panel details{margin-bottom:10px;border:1px solid #2d3139;border-radius:6px;padding:8px 10px;background:#0f1117}
+.mindsweep-panel details[open]{border-color:#3d4149}
+.mindsweep-panel summary{cursor:pointer;font-weight:600;font-size:0.82rem;color:#e8eaed}
+.mindsweep-panel ul{list-style:none;padding:8px 0 4px 0}
+.mindsweep-panel li{padding:5px 8px;font-size:0.78rem;color:#c4cad3;cursor:pointer;border-radius:4px}
+.mindsweep-panel li:hover{background:#2d3139;color:#7ec8a3}
+
+/* Walkthrough overlay — Mode B. One inbox item at a time, full focus. */
+.walkthrough-overlay{position:fixed;inset:0;background:rgba(15,17,23,0.94);z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.walkthrough-overlay[hidden]{display:none}
+.walkthrough-topbar{display:flex;justify-content:space-between;width:100%;max-width:780px;margin-bottom:18px}
+.walkthrough-topbar .exit{padding:6px 14px;border-radius:6px;border:1px solid #2d3139;background:transparent;color:#e8eaed;cursor:pointer}
+.walkthrough-topbar .progress{font-size:0.85rem;color:#9ba1ab}
+.walkthrough-card{background:#1a1d27;border:1px solid #3d4149;border-radius:12px;padding:32px;width:100%;max-width:780px;min-height:200px}
+.walkthrough-card .name{font-size:1.4rem;font-weight:600;color:#fff;margin-bottom:16px;word-break:break-word}
+.walkthrough-card .meta{margin-bottom:0}
+.walkthrough-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;width:100%;max-width:780px;margin-top:20px}
+.walkthrough-actions .triage-btn{padding:14px 12px;font-size:0.88rem;text-align:center}
+.walkthrough-empty{color:#9ba1ab;font-size:1rem;text-align:center;max-width:520px}
 </style>
 </head>
 <body>
 <header>
-  <h1>🎯 Mike's GTD Command Center</h1>
+  <h1>🎯 Mike's GTD</h1>
+  <div class="quick-add">
+    <input id="quick-add-input" type="text" placeholder="Capture anything into Inbox..." aria-label="Quick capture">
+    <button onclick="quickCapture()" title="Add to Inbox (Enter)">+ Inbox</button>
+    <span class="hint">press <strong>n</strong> to focus</span>
+  </div>
   <div class="header-status">
-    <span id="clock"></span>
-    <span id="sync-status">● Synced</span>
+    <span class="clock" id="clock"></span>
+    <span class="sync" id="sync-status">● Synced</span>
+    <button onclick="toggleMindSweep()" title="Toggle MindSweep / Trigger Lists (press m)">🧠 MindSweep</button>
   </div>
 </header>
 <div class="tabs">
@@ -70,31 +128,67 @@ header h1{font-size:1.4rem;color:#fff}
   <button class="tab" onclick="switchTab('nextactions')">✅ Next Actions</button>
   <button class="tab" onclick="switchTab('waitingfor')">⏳ Waiting For</button>
   <button class="tab" onclick="switchTab('somedaymaybe')">💡 Someday</button>
+  <button class="tab" onclick="switchTab('reference')">📚 Reference</button>
+  <button class="tab" onclick="switchTab('tickler')">⏰ Tickler</button>
+  <button class="tab" onclick="switchTab('today')">📅 Today</button>
 </div>
 <div class="main">
   <div id="error-box" class="error-msg" style="display:none"></div>
+  <div id="toast" class="toast-ok" style="display:none"></div>
   <div id="stats-bar" class="stats-bar"></div>
+  <div id="section-toolbar" class="section-toolbar"></div>
   <div id="add-form-container"></div>
   <div id="item-list" class="item-list">
     <div class="loading">Loading</div>
   </div>
 </div>
+
+<!-- Phase 3 — MindSweep / Trigger Lists drawer (right-rail).
+     Mike clicks a category, it prefills the quick-add input with a brain-spark
+     prompt so he can capture without having to invent the word himself. -->
+<aside id="mindsweep-panel" class="mindsweep-panel" aria-hidden="true">
+  <h3>🧠 MindSweep — Trigger Lists</h3>
+  <p class="ms-help">When your brain blanks during capture, click a category to seed the quick-add input. From Allen's <em>Personal + Professional Incompletion Trigger Lists</em> (System Guides p.1–2).</p>
+  <details open>
+    <summary>Personal</summary>
+    <ul id="ms-personal"></ul>
+  </details>
+  <details>
+    <summary>Professional</summary>
+    <ul id="ms-professional"></ul>
+  </details>
+</aside>
+
+<!-- Phase 3 — Walkthrough overlay (Mode B): one inbox item at a time, full focus. -->
+<div id="walkthrough-overlay" class="walkthrough-overlay" hidden>
+  <div class="walkthrough-topbar">
+    <button class="exit" onclick="exitWalkthrough()">✕ Exit walkthrough</button>
+    <span class="progress" id="walkthrough-progress"></span>
+  </div>
+  <div class="walkthrough-card" id="walkthrough-card"></div>
+  <div class="walkthrough-actions" id="walkthrough-actions"></div>
+</div>
+
 <script>
 const TABS = {
-  inbox: { title: '📥 Inbox', stats: ['New','Processing','Actionable','Done'] },
-  goals: { title: '🎯 Goals', stats: ['🟢 Active','🟡 Reviewing','🔴 Stalled'] },
-  projects: { title: '📁 Projects', stats: ['Active','Waiting','Stalled','Someday'] },
-  nextactions: { title: '✅ Next Actions', stats: ['P1','P2','P3','P4'] },
-  waitingfor: { title: '⏳ Waiting For', stats: ['Waiting','Follow-up due'] },
+  inbox:        { title: '📥 Inbox',         stats: ['New','Processing','Actionable','Done'] },
+  goals:        { title: '🎯 Goals',         stats: ['🟢 Active','🟡 Reviewing','🔴 Stalled'] },
+  projects:     { title: '📁 Projects',      stats: ['Active','Waiting','Stalled','Someday'] },
+  nextactions:  { title: '✅ Next Actions',  stats: ['P1','P2','P3','P4'] },
+  waitingfor:   { title: '⏳ Waiting For',   stats: ['Waiting','Follow-up due'] },
   somedaymaybe: { title: '💡 Someday Maybe', stats: ['Active','Maybe someday'] },
+  reference:    { title: '📚 Reference',     stats: ['Note','URL','File','Contact','Other'] },
+  tickler:      { title: '⏰ Tickler',       stats: ['Surfacing today','Future','Past due'] },
+  today:        { title: '📅 Today',         stats: ['Today','Past'] },
 };
 const AREAS = ['Career / Work','Health / Fitness','Relationships','Finances','Learning / Growth','Home / Logistics','Personal Systems'];
 const PRIORITIES = { inbox: ['P1','P2','P3','P4'], goals: ['🟢','🟡','🔴'], projects: ['Active','Waiting','Stalled','Someday'], nextactions: ['P1','P2','P3','P4'], waitingfor: ['Waiting'], somedaymaybe: ['Active','Someday'] };
+const CONTEXTS = ['@work','@home','@calls','@computer','@errands','@anywhere','@thinking'];
+const ENERGIES = ['Deep Work','Admin','Communication','Errand','Maintenance','Planning'];
 
-// Phase 1 auth: the serverless proxy now requires X-Auth-Token on every request.
-// We can't ship a secret inside a static HTML page, so the token lives in
-// localStorage and is set once per device via a prompt. Server-side, the token
-// must match the GTD_AUTH_TOKEN env var on Vercel.
+// Phase 1 auth: the serverless proxy requires X-Auth-Token on every request.
+// Static HTML can't hold a server secret, so the token lives in localStorage,
+// set once per device via a prompt. Must match GTD_AUTH_TOKEN on Vercel.
 const TOKEN_KEY = 'gtd-token';
 function getToken() {
   let t = localStorage.getItem(TOKEN_KEY);
@@ -108,18 +202,22 @@ function clearToken() { localStorage.removeItem(TOKEN_KEY); }
 async function apiFetch(url, options = {}) {
   const headers = { ...(options.headers || {}), 'X-Auth-Token': getToken() };
   const r = await fetch(url, { ...options, headers });
-  if (r.status === 401) {
-    clearToken();
-    showError('Auth failed — token cleared. Reload the page to re-enter it.');
-  }
+  if (r.status === 401) { clearToken(); showError('Auth failed — token cleared. Reload the page to re-enter it.'); }
   return r;
+}
+async function apiFetchOk(url, opts) {
+  const r = await apiFetch(url, opts);
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Request failed');
+  return data;
 }
 
 let currentTab = 'inbox';
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+  const btn = document.querySelector(`.tab[onclick="switchTab('${tab}')"]`);
+  if (btn) btn.classList.add('active');
   loadTab(tab);
 }
 function showError(msg) {
@@ -128,9 +226,17 @@ function showError(msg) {
   el.style.display = 'block';
   setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
+function showOk(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 2500);
+}
+
 async function loadTab(tab) {
-  document.getElementById('item-list').innerHTML = '<div class="loading">Loading</div>';
-  document.getElementById('stats-bar').innerHTML = '';
+  document.getElementById('item-list').replaceChildren(loadingNode());
+  document.getElementById('stats-bar').replaceChildren();
+  renderSectionToolbar(tab);
   renderAddForm(tab);
   try {
     const r = await apiFetch(`/api/notion?section=${tab}`);
@@ -140,14 +246,19 @@ async function loadTab(tab) {
     renderStats(tab, data.pages || []);
   } catch (e) {
     showError(e.message);
-    document.getElementById('item-list').innerHTML = '<div class="loading">Error loading data — check API connection</div>';
+    document.getElementById('item-list').replaceChildren(textNode('Error loading data — check API connection', 'loading'));
   }
 }
-// Phase 1 fix: exact match per tab, not substring. The previous implementation
-// did `v.includes(k[0])` — so 'P1' matched any string containing 'P', meaning
-// every P2/P3/P4 item double-counted into the P1 bucket. If a tab's stat label
-// doesn't match the actual property value stored in Notion, that bucket shows
-// 0 — the honest answer until Phase 5 reconciles status conventions per DB.
+function loadingNode() {
+  const d = document.createElement('div'); d.className = 'loading'; d.textContent = 'Loading'; return d;
+}
+function textNode(text, cls) {
+  const d = document.createElement('div'); if (cls) d.className = cls; d.textContent = text; return d;
+}
+
+// Stat counters: exact match per tab (Phase 1 fix), with new logic for the
+// Phase 2 DBs. waitingfor uses date comparison; tickler/today bucket by date
+// relative to today; reference buckets by Type.
 const STAT_MATCHERS = {
   inbox:        (p, k) => p.Status === k,
   goals:        (p, k) => p.Status === k,
@@ -155,10 +266,30 @@ const STAT_MATCHERS = {
   nextactions:  (p, k) => p.Priority === k,
   somedaymaybe: (p, k) => p.Status === k,
   waitingfor:   (p, k) => {
-    const followUp = p['Follow Up'];
-    const isDue = followUp && new Date(followUp) <= new Date();
+    const fu = p['Follow Up'];
+    const isDue = fu && new Date(fu) <= new Date();
     if (k === 'Follow-up due') return Boolean(isDue);
     if (k === 'Waiting') return !isDue;
+    return false;
+  },
+  reference:    (p, k) => p.Type === k,
+  tickler:      (p, k) => {
+    const s = p['Surface On'];
+    if (!s) return false;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const d = new Date(s); d.setHours(0,0,0,0);
+    if (k === 'Surfacing today') return d.getTime() === today.getTime();
+    if (k === 'Future')          return d.getTime() >  today.getTime();
+    if (k === 'Past due')        return d.getTime() <  today.getTime();
+    return false;
+  },
+  today:        (p, k) => {
+    const d = p.Date;
+    if (!d) return false;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const x = new Date(d); x.setHours(0,0,0,0);
+    if (k === 'Today') return x.getTime() === today.getTime();
+    if (k === 'Past')  return x.getTime() <  today.getTime();
     return false;
   },
 };
@@ -170,114 +301,422 @@ function renderStats(tab, pages) {
   const bar = document.getElementById('stats-bar');
   bar.replaceChildren(...s.map(k => {
     const card = document.createElement('div'); card.className = 'stat-card';
-    const num  = document.createElement('div'); num.className  = 'num';   num.textContent  = counts[k];
-    const lbl  = document.createElement('div'); lbl.className  = 'label'; lbl.textContent  = k;
-    card.append(num, lbl);
-    return card;
+    const num  = document.createElement('div'); num.className  = 'num';   num.textContent = counts[k];
+    const lbl  = document.createElement('div'); lbl.className  = 'label'; lbl.textContent = k;
+    card.append(num, lbl); return card;
   }));
 }
+
+// Phase 3 — DOM-based renderItems. Replaces the Phase-1 template-string version
+// so untrusted Notion content can't inject markup. Each inbox card carries a
+// 7-button triage row (Mode A); other tabs just show data.
 function renderItems(tab, pages) {
+  const list = document.getElementById('item-list');
   if (!pages.length) {
-    document.getElementById('item-list').innerHTML = '<div class="loading">No items yet — use the form above to add one</div>';
+    list.replaceChildren(textNode('No items yet — use the quick-add bar above to capture one', 'loading'));
     return;
   }
-  document.getElementById('item-list').innerHTML = pages.map(p => {
-    const name = p.Name || '(unnamed)';
-    const badge = p.Priority || p.Status || '';
-    const badgeClass = badge.startsWith('P1')||badge==='🟢'||badge==='Active'?'badge-p1':badge.startsWith('P2')||badge==='🟡'||badge==='Waiting'?'badge-p2':badge.startsWith('P3')||badge==='🔴'||badge==='Stalled'?'badge-p3':'badge-p4';
-    const area = (p.Area && p.Area.length) ? p.Area.join(', ') : '';
-    const status = p.Status || '';
-    const context = p.Context ? p.Context.join(', ') : '';
-    const energy = p.Energy || '';
-    const nextAction = p['Next Action'] || '';
-    const waitingOn = p['Waiting On'] || '';
-    const since = p.Since || '';
-    const followUp = p['Follow Up'] || '';
-    const why = p['Why It Matters'] || '';
-    let meta = '';
-    if (area) meta += `<span>📌 ${area}</span>`;
-    if (context) meta += `<span>📍 ${context}</span>`;
-    if (energy) meta += `<span>⚡ ${energy}</span>`;
-    if (status) meta += `<span>${status.startsWith('🟢')?'🟢':status.startsWith('🟡')?'🟡':status.startsWith('🔴')?'🔴':'●'} ${status}</span>`;
-    if (nextAction) meta += `<span>→ ${nextAction}</span>`;
-    if (waitingOn) meta += `<span>⏳ ${waitingOn}</span>`;
-    if (since) meta += `<span>📅 Since ${since}</span>`;
-    if (followUp) meta += `<span>🔔 Follow up ${followUp}</span>`;
-    if (why) meta += `<span>💡 ${why}</span>`;
-    return `<div class="item-card">
-      <div class="item-header">
-        <div class="item-name">${name}</div>
-        ${badge ? `<span class="item-badge ${badgeClass}">${badge}</span>` : ''}
-      </div>
-      <div class="meta">${meta}</div>
-    </div>`;
-  }).join('');
+  list.replaceChildren(...pages.map(p => buildItemCard(tab, p)));
 }
+function buildItemCard(tab, p) {
+  const card = document.createElement('div'); card.className = 'item-card'; card.dataset.pageId = p.id;
+  const header = document.createElement('div'); header.className = 'item-header';
+  const name = document.createElement('div'); name.className = 'item-name'; name.textContent = p.Name || '(unnamed)';
+  header.appendChild(name);
+  const badgeText = p.Priority || p.Status || '';
+  if (badgeText) {
+    const badge = document.createElement('span'); badge.className = 'item-badge ' + badgeClassFor(badgeText);
+    badge.textContent = badgeText;
+    header.appendChild(badge);
+  }
+  card.appendChild(header);
+  const meta = document.createElement('div'); meta.className = 'meta';
+  const pieces = metaPieces(p);
+  pieces.forEach(([icon, text]) => {
+    const span = document.createElement('span'); span.textContent = `${icon} ${text}`; meta.appendChild(span);
+  });
+  if (pieces.length) card.appendChild(meta);
+  if (tab === 'inbox') card.appendChild(buildTriageRow(p, card));
+  return card;
+}
+function badgeClassFor(t) {
+  if (typeof t !== 'string') return 'badge-p4';
+  if (t.startsWith('P1') || t === '🟢' || t === 'Active')  return 'badge-p1';
+  if (t.startsWith('P2') || t === '🟡' || t === 'Waiting') return 'badge-p2';
+  if (t.startsWith('P3') || t === '🔴' || t === 'Stalled') return 'badge-p3';
+  return 'badge-p4';
+}
+function metaPieces(p) {
+  const out = [];
+  if (Array.isArray(p.Area) && p.Area.length)       out.push(['📌', p.Area.join(', ')]);
+  if (Array.isArray(p.Context) && p.Context.length) out.push(['📍', p.Context.join(', ')]);
+  if (p.Energy)                  out.push(['⚡', p.Energy]);
+  if (p.Status)                  out.push(['●', p.Status]);
+  if (p['Next Action'])          out.push(['→', p['Next Action']]);
+  if (p['Waiting On'])           out.push(['⏳', p['Waiting On']]);
+  if (p.Since)                   out.push(['📅 Since', p.Since]);
+  if (p['Follow Up'])            out.push(['🔔 Follow up', p['Follow Up']]);
+  if (p['Why It Matters'])       out.push(['💡', p['Why It Matters']]);
+  if (p.Type)                    out.push(['🏷', p.Type]);
+  if (Array.isArray(p.Tags) && p.Tags.length) out.push(['#', p.Tags.join(', ')]);
+  if (p.Content)                 out.push(['📄', p.Content]);
+  if (p['Surface On'])           out.push(['📅 Surface on', p['Surface On']]);
+  if (p['Action When It Surfaces']) out.push(['→ When', p['Action When It Surfaces']]);
+  if (p.Date)                    out.push(['📅', p.Date]);
+  if (p['Outcome 1'])            out.push(['1️⃣', p['Outcome 1']]);
+  if (p['Outcome 2'])            out.push(['2️⃣', p['Outcome 2']]);
+  if (p['Outcome 3'])            out.push(['3️⃣', p['Outcome 3']]);
+  return out;
+}
+
+// Phase 3 — triage decision tree per inbox card. Allen's Clarify step:
+// "What is it? Is it actionable? If so, will it take <2min? If not, defer
+// (date → Tickler) or delegate / project / file / discard."
+const TRIAGE_BUTTONS = [
+  { label: '⚡ Do Now',      action: 'donow',        title: 'Action takes <2min — completes the item now (archives in Notion)' },
+  { label: '→ Next Action', action: 'nextaction',   title: 'Defer. Prompts: date-specific?  Yes → Tickler.  No → Next Actions.' },
+  { label: '→ Project',     action: 'projects',     title: 'Multi-step outcome — moves to Projects' },
+  { label: '→ Waiting',     action: 'waitingfor',   title: 'Delegated — moves to Waiting For' },
+  { label: '→ Someday',     action: 'somedaymaybe', title: 'Future — moves to Someday/Maybe' },
+  { label: '→ Reference',   action: 'reference',    title: 'Non-actionable, keep — moves to Reference' },
+  { label: '🗑 Trash',      action: 'trash',        title: 'Non-actionable, discard — archives in Notion' },
+];
+function buildTriageRow(p, card) {
+  const row = document.createElement('div'); row.className = 'triage-row';
+  TRIAGE_BUTTONS.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'triage-btn';
+    btn.dataset.action = b.action;
+    btn.textContent = b.label;
+    btn.title = b.title;
+    btn.addEventListener('click', (ev) => runTriage(ev.currentTarget, p, card, b.action));
+    row.appendChild(btn);
+  });
+  return row;
+}
+async function runTriage(buttonEl, page, cardEl, action) {
+  if (action === 'nextaction') return openDeferPopover(page, cardEl);
+  setRowBusy(cardEl, true);
+  try {
+    if (action === 'donow' || action === 'trash') {
+      await apiFetchOk(`/api/notion?action=complete&id=${page.id}`, { method: 'POST' });
+      showOk(action === 'donow' ? '✓ Done — archived' : '🗑 Trashed');
+    } else {
+      await apiFetchOk(`/api/notion?section=inbox&action=move&id=${page.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toSection: action }),
+      });
+      showOk(`→ Moved to ${TABS[action].title}`);
+    }
+    if (walkthroughActive) walkthroughAdvance(); else removeCard(cardEl);
+  } catch (e) {
+    setRowBusy(cardEl, false);
+    showError(e.message);
+  }
+}
+function setRowBusy(cardEl, busy) {
+  cardEl.querySelectorAll('.triage-btn').forEach(b => { b.disabled = busy; });
+}
+function removeCard(cardEl) { cardEl.style.opacity = 0; setTimeout(() => cardEl.remove(), 150); }
+
+// Defer-split inline popover for the "→ Next Action" button. Per all GTD
+// workflow maps, Defer must answer "date-specific?" — yes → Tickler with
+// surfaceOn date, no → Next Actions.
+function openDeferPopover(page, cardEl) {
+  if (cardEl.querySelector('.defer-popover')) return;
+  const pop = document.createElement('div'); pop.className = 'defer-popover';
+  const help = document.createElement('div'); help.className = 'defer-help';
+  help.textContent = 'Is this date-specific?  Pick a date to send to Tickler — otherwise click "Next Actions" to send it to the runway.';
+  const date = document.createElement('input'); date.type = 'date';
+  const tickler = document.createElement('button'); tickler.textContent = '→ Tickler (on date)';
+  const na = document.createElement('button'); na.textContent = '→ Next Actions (no date)';
+  const cancel = document.createElement('button'); cancel.textContent = 'Cancel';
+  tickler.addEventListener('click', async () => {
+    if (!date.value) { showError('Pick a date or click Next Actions for no-date defer'); return; }
+    setRowBusy(cardEl, true);
+    try {
+      await apiFetchOk(`/api/notion?section=inbox&action=move&id=${page.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toSection: 'tickler', surfaceOn: date.value, actionOnSurface: page.Name || '' }),
+      });
+      showOk(`→ Tickler surfaces ${date.value}`);
+      if (walkthroughActive) walkthroughAdvance(); else removeCard(cardEl);
+    } catch (e) { setRowBusy(cardEl, false); showError(e.message); }
+  });
+  na.addEventListener('click', async () => {
+    setRowBusy(cardEl, true);
+    try {
+      await apiFetchOk(`/api/notion?section=inbox&action=move&id=${page.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toSection: 'nextactions' }),
+      });
+      showOk('→ Moved to Next Actions');
+      if (walkthroughActive) walkthroughAdvance(); else removeCard(cardEl);
+    } catch (e) { setRowBusy(cardEl, false); showError(e.message); }
+  });
+  cancel.addEventListener('click', () => pop.remove());
+  pop.append(help, date, tickler, na, cancel);
+  cardEl.appendChild(pop);
+  date.focus();
+}
+
+// ---------------- Walkthrough mode (Mode B) -----------------
+// Mike clicks "Process Inbox" → focus overlay shows one card at a time with
+// the same 7 buttons. Auto-advances on action.
+let walkthroughActive = false;
+let walkthroughQueue = [];
+let walkthroughIndex = 0;
+async function startWalkthrough() {
+  try {
+    const data = await apiFetchOk('/api/notion?section=inbox');
+    const pages = data.pages || [];
+    if (!pages.length) { showOk('🎉 Inbox is empty — nothing to process.'); return; }
+    walkthroughQueue = pages;
+    walkthroughIndex = 0;
+    walkthroughActive = true;
+    document.getElementById('walkthrough-overlay').hidden = false;
+    renderWalkthrough();
+  } catch (e) { showError(e.message); }
+}
+function exitWalkthrough() {
+  walkthroughActive = false;
+  walkthroughQueue = [];
+  document.getElementById('walkthrough-overlay').hidden = true;
+  if (currentTab === 'inbox') loadTab('inbox');
+}
+function walkthroughAdvance() {
+  walkthroughIndex++;
+  if (walkthroughIndex >= walkthroughQueue.length) { exitWalkthrough(); showOk('🎉 Inbox processed'); return; }
+  renderWalkthrough();
+}
+function renderWalkthrough() {
+  const card = document.getElementById('walkthrough-card');
+  const actions = document.getElementById('walkthrough-actions');
+  const prog = document.getElementById('walkthrough-progress');
+  if (!walkthroughQueue.length) {
+    card.replaceChildren(textNode('Inbox is empty — nothing to process.', 'walkthrough-empty'));
+    actions.replaceChildren();
+    prog.textContent = '';
+    return;
+  }
+  const p = walkthroughQueue[walkthroughIndex];
+  prog.textContent = `Item ${walkthroughIndex + 1} of ${walkthroughQueue.length}`;
+  card.replaceChildren();
+  const name = document.createElement('div'); name.className = 'name'; name.textContent = p.Name || '(unnamed)';
+  card.appendChild(name);
+  const meta = document.createElement('div'); meta.className = 'meta';
+  metaPieces(p).forEach(([icon, text]) => {
+    const span = document.createElement('span'); span.textContent = `${icon} ${text}`; meta.appendChild(span);
+  });
+  card.appendChild(meta);
+  actions.replaceChildren();
+  TRIAGE_BUTTONS.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'triage-btn';
+    btn.dataset.action = b.action;
+    btn.textContent = b.label;
+    btn.title = b.title;
+    btn.addEventListener('click', (ev) => runTriage(ev.currentTarget, p, card, b.action));
+    actions.appendChild(btn);
+  });
+}
+
+// ---------------- Add forms (DOM-built so untrusted values can't inject) ----------------
 function renderAddForm(tab) {
+  const container = document.getElementById('add-form-container');
+  container.replaceChildren();
+  if (tab === 'tickler' || tab === 'today' || tab === 'reference') return; // Phase 5 polishes per-tab forms
+
+  const form = document.createElement('div'); form.className = 'add-form';
+  const h3 = document.createElement('h3'); h3.textContent = `+ Add to ${TABS[tab].title}`;
+  form.appendChild(h3);
+
+  const row1 = document.createElement('div'); row1.className = 'add-form-row';
+  const nameInput = makeInput({ id: 'f-name', placeholder: 'Item name...', style: 'flex:2' });
+  row1.appendChild(nameInput);
+
   const priorities = PRIORITIES[tab] || [];
-  const areaOpts = AREAS.map(a => `<option value="${a}">${a}</option>`).join('');
-  const prioOpts = priorities.map(p => `<option value="${p}">${p}</option>`).join('');
-  let fields = '';
-  if (tab === 'inbox') fields = `<select id="f-priority"><option value="">Priority...</option>${prioOpts}</select><select id="f-area"><option value="">Area...</option>${areaOpts}</select>`;
-  else if (tab === 'goals') fields = `<input id="f-why" placeholder="Why it matters..." style="flex:2"><select id="f-status"><option value="">Status...</option>${prioOpts}</select>`;
-  else if (tab === 'projects') fields = `<select id="f-area"><option value="">Area...</option>${areaOpts}</select><select id="f-status"><option value="">Status...</option>${prioOpts}</select><input id="f-next" placeholder="Next action..." style="flex:2">`;
-  else if (tab === 'nextactions') fields = `<select id="f-priority"><option value="">Priority...</option>${prioOpts}</select><select id="f-context"><option value="">Context...</option><option>@work</option><option>@home</option><option>@calls</option><option>@computer</option><option>@errands</option><option>@anywhere</option><option>@thinking</option></select><select id="f-energy"><option value="">Energy...</option><option>Deep Work</option><option>Admin</option><option>Communication</option><option>Errand</option><option>Maintenance</option><option>Planning</option></select><select id="f-area"><option value="">Area...</option>${areaOpts}</select>`;
-  else if (tab === 'waitingfor') fields = `<input id="f-waitingOn" placeholder="Waiting on..." style="flex:2"><input id="f-need" placeholder="Need..." style="flex:1"><input id="f-since" type="date" style="flex:1"><input id="f-followUp" type="date" style="flex:1">`;
-  else if (tab === 'somedaymaybe') fields = `<select id="f-area"><option value="">Area...</option>${areaOpts}</select>`;
-  document.getElementById('add-form-container').innerHTML = `<div class="add-form">
-    <h3>+ Add ${TABS[tab].title.replace(/📌|🎯|📁|✅|⏳|💡 /g,'')} Item</h3>
-    <div class="add-form-row">
-      <input id="f-name" placeholder="Item name..." style="flex:2">
-      ${fields}
-    </div>
-    <div class="add-form-row">
-      <button onclick="addItem('${tab}')">Add to ${TABS[tab].title}</button>
-    </div>
-  </div>`;
+  if (tab === 'inbox') {
+    row1.appendChild(makeSelect({ id: 'f-priority', placeholder: 'Priority...', options: priorities }));
+    row1.appendChild(makeSelect({ id: 'f-area', placeholder: 'Area...', options: AREAS }));
+  } else if (tab === 'goals') {
+    row1.appendChild(makeInput({ id: 'f-why', placeholder: 'Why it matters...', style: 'flex:2' }));
+    row1.appendChild(makeSelect({ id: 'f-status', placeholder: 'Status...', options: priorities }));
+  } else if (tab === 'projects') {
+    row1.appendChild(makeSelect({ id: 'f-area', placeholder: 'Area...', options: AREAS }));
+    row1.appendChild(makeSelect({ id: 'f-status', placeholder: 'Status...', options: priorities }));
+    row1.appendChild(makeInput({ id: 'f-next', placeholder: 'Next action...', style: 'flex:2' }));
+  } else if (tab === 'nextactions') {
+    row1.appendChild(makeSelect({ id: 'f-priority', placeholder: 'Priority...', options: priorities }));
+    row1.appendChild(makeSelect({ id: 'f-context', placeholder: 'Context...', options: CONTEXTS }));
+    row1.appendChild(makeSelect({ id: 'f-energy', placeholder: 'Energy...', options: ENERGIES }));
+    row1.appendChild(makeSelect({ id: 'f-area', placeholder: 'Area...', options: AREAS }));
+  } else if (tab === 'waitingfor') {
+    row1.appendChild(makeInput({ id: 'f-waitingOn', placeholder: 'Waiting on...', style: 'flex:2' }));
+    row1.appendChild(makeInput({ id: 'f-need', placeholder: 'Need...', style: 'flex:1' }));
+    row1.appendChild(makeInput({ id: 'f-since', type: 'date', style: 'flex:1' }));
+    row1.appendChild(makeInput({ id: 'f-followUp', type: 'date', style: 'flex:1' }));
+  } else if (tab === 'somedaymaybe') {
+    row1.appendChild(makeSelect({ id: 'f-area', placeholder: 'Area...', options: AREAS }));
+  }
+  form.appendChild(row1);
+
+  const row2 = document.createElement('div'); row2.className = 'add-form-row';
+  const submit = document.createElement('button');
+  submit.textContent = 'Add';
+  submit.addEventListener('click', () => addItem(tab));
+  row2.appendChild(submit);
+  form.appendChild(row2);
+
+  container.appendChild(form);
+}
+function makeInput({ id, placeholder, type = 'text', style = '' }) {
+  const i = document.createElement('input');
+  i.id = id; i.type = type;
+  if (placeholder) i.placeholder = placeholder;
+  if (style) i.setAttribute('style', style);
+  return i;
+}
+function makeSelect({ id, placeholder, options }) {
+  const sel = document.createElement('select');
+  sel.id = id;
+  const blank = document.createElement('option'); blank.value = ''; blank.textContent = placeholder || '—';
+  sel.appendChild(blank);
+  options.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o; opt.textContent = o; sel.appendChild(opt);
+  });
+  return sel;
 }
 async function addItem(tab) {
-  const name = document.getElementById('f-name').value.trim();
+  const name = document.getElementById('f-name')?.value?.trim();
   if (!name) { showError('Please enter a name'); return; }
   const body = { name };
   const get = id => document.getElementById(id)?.value?.trim();
   const getVal = id => document.getElementById(id)?.value;
-  if (tab === 'inbox') {
-    if (getVal('f-priority')) body.priority = getVal('f-priority');
-    if (getVal('f-area')) body.area = getVal('f-area');
-  } else if (tab === 'goals') {
-    if (get('f-why')) body.why = get('f-why');
-    if (getVal('f-status')) body.status = getVal('f-status');
-  } else if (tab === 'projects') {
-    if (getVal('f-area')) body.area = getVal('f-area');
-    if (getVal('f-status')) body.status = getVal('f-status');
-    if (get('f-next')) body.nextAction = get('f-next');
-  } else if (tab === 'nextactions') {
-    if (getVal('f-priority')) body.priority = getVal('f-priority');
-    if (getVal('f-context')) body.context = getVal('f-context');
-    if (getVal('f-energy')) body.energy = getVal('f-energy');
-    if (getVal('f-area')) body.area = getVal('f-area');
-  } else if (tab === 'waitingfor') {
-    if (get('f-waitingOn')) body.waitingOn = get('f-waitingOn');
-    if (get('f-need')) body.need = get('f-need');
-    if (getVal('f-since')) body.since = getVal('f-since');
-    if (getVal('f-followUp')) body.followUp = getVal('f-followUp');
-  } else if (tab === 'somedaymaybe') {
-    if (getVal('f-area')) body.area = getVal('f-area');
-  }
+  if (tab === 'inbox')        { if (getVal('f-priority')) body.priority = getVal('f-priority'); if (getVal('f-area')) body.area = getVal('f-area'); }
+  else if (tab === 'goals')   { if (get('f-why')) body.why = get('f-why'); if (getVal('f-status')) body.status = getVal('f-status'); }
+  else if (tab === 'projects'){ if (getVal('f-area')) body.area = getVal('f-area'); if (getVal('f-status')) body.status = getVal('f-status'); if (get('f-next')) body.nextAction = get('f-next'); }
+  else if (tab === 'nextactions') { if (getVal('f-priority')) body.priority = getVal('f-priority'); if (getVal('f-context')) body.context = getVal('f-context'); if (getVal('f-energy')) body.energy = getVal('f-energy'); if (getVal('f-area')) body.area = getVal('f-area'); }
+  else if (tab === 'waitingfor') { if (get('f-waitingOn')) body.waitingOn = get('f-waitingOn'); if (get('f-need')) body.need = get('f-need'); if (getVal('f-since')) body.since = getVal('f-since'); if (getVal('f-followUp')) body.followUp = getVal('f-followUp'); }
+  else if (tab === 'somedaymaybe') { if (getVal('f-area')) body.area = getVal('f-area'); }
   try {
-    const r = await apiFetch(`/api/notion?section=${tab}&action=add`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || 'Failed to add');
+    await apiFetchOk(`/api/notion?section=${tab}&action=add`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     document.getElementById('f-name').value = '';
+    showOk('Added');
     loadTab(tab);
   } catch (e) { showError(e.message); }
 }
+
+// ---------------- Section toolbar — per-tab actions ----------------
+function renderSectionToolbar(tab) {
+  const bar = document.getElementById('section-toolbar');
+  bar.replaceChildren();
+  if (tab === 'inbox') {
+    const walk = document.createElement('button');
+    walk.textContent = '▶ Process Inbox (walkthrough)';
+    walk.title = 'Focus mode — one item at a time, full screen';
+    walk.addEventListener('click', startWalkthrough);
+    bar.appendChild(walk);
+    const info = document.createElement('span'); info.className = 'toolbar-info';
+    info.textContent = 'Tip: press n to focus quick-add  ·  m to toggle MindSweep';
+    bar.appendChild(info);
+  }
+}
+
+// ---------------- Quick-add bar -----------------
+async function quickCapture() {
+  const inp = document.getElementById('quick-add-input');
+  const text = inp.value.trim();
+  if (!text) { inp.focus(); return; }
+  try {
+    await apiFetchOk('/api/notion?section=inbox&action=add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: text }),
+    });
+    inp.value = '';
+    showOk('+ Inbox');
+    if (currentTab === 'inbox') loadTab('inbox');
+  } catch (e) { showError(e.message); }
+}
+
+// ---------------- MindSweep drawer -----------------
+const TRIGGER_LISTS = {
+  personal: [
+    'Projects started not completed', 'Communications to make / get', 'Upcoming events',
+    'Family — partner, kids, parents, in-laws, relatives', 'Administration (banking, insurance, taxes)',
+    'Leisure — books, music, video, travel, hobbies', 'Financial — bills, debts, investments, savings',
+    'Pets — food, vet, grooming', 'Legal — wills, trusts, estate, contracts',
+    'Waiting for — borrowed/lent items, repairs, deliveries', 'Home — repairs, maintenance, decor, appliances',
+    'Health — doctors, dentist, eye, body, mind', 'Personal development — courses, mentoring, coaching',
+    'Transportation — vehicles, bikes, public transit', 'Clothes — wardrobe, shoes, accessories',
+    'Errands — drugstore, hardware, bank, dry cleaner', 'Community — neighbors, civic, charity, religious',
+    'Notes / messages / emails to acknowledge',
+  ],
+  professional: [
+    'Projects started not completed', 'Projects that need to start', 'Submitted-for decisions',
+    'Communications to make / get (calls / emails / letters)', 'People you need to talk to',
+    'Initiate or respond to — colleagues, vendors, customers, partners', 'Internal & external meetings to schedule',
+    'Reports to write or review', 'Decisions pending', 'Strategy & planning',
+    'Career — your role, growth, opportunities', 'Administration — HR, expenses, policies',
+    'Customers — sales, service, feedback', 'Clients — onboarding, retention, escalations',
+    'Other organizations — partners, suppliers', 'Personnel — hiring, firing, reviews, training',
+    'Information needs — data, research, references', 'Computers / IT — software, hardware, security',
+    'Reading — newsletters, articles, books, courses', 'Financial — budgets, forecasts, P&L',
+    'Marketing / PR / communications', 'Organization development — process, culture, structure',
+  ],
+};
+function populateMindSweep() {
+  const fill = (id, items) => {
+    const ul = document.getElementById(id); ul.replaceChildren();
+    items.forEach(text => {
+      const li = document.createElement('li'); li.textContent = text;
+      li.addEventListener('click', () => {
+        const inp = document.getElementById('quick-add-input');
+        const trigger = text.split(' — ')[0].split(' (')[0];
+        inp.value = inp.value ? `${inp.value} (${trigger})` : `${trigger}: `;
+        inp.focus();
+      });
+      ul.appendChild(li);
+    });
+  };
+  fill('ms-personal', TRIGGER_LISTS.personal);
+  fill('ms-professional', TRIGGER_LISTS.professional);
+}
+function toggleMindSweep() {
+  const panel = document.getElementById('mindsweep-panel');
+  const open = panel.classList.toggle('open');
+  panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+  document.body.classList.toggle('mindsweep-open', open);
+}
+
+// ---------------- Keyboard shortcuts -----------------
+// 'n' anywhere (outside input) focuses the quick-add input.
+// 'm' toggles MindSweep. 'Esc' exits walkthrough.
+// 'Enter' in quick-add submits.
+document.addEventListener('keydown', (e) => {
+  const inField = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+  if (e.key === 'Escape' && walkthroughActive) { exitWalkthrough(); return; }
+  if (inField) {
+    if (e.key === 'Enter' && document.activeElement?.id === 'quick-add-input') { e.preventDefault(); quickCapture(); }
+    return;
+  }
+  if (e.key === 'n' || e.key === 'N') { e.preventDefault(); document.getElementById('quick-add-input').focus(); }
+  else if (e.key === 'm' || e.key === 'M') { e.preventDefault(); toggleMindSweep(); }
+});
+
+// ---------------- Boot -----------------
 function updateClock() {
   const now = new Date();
   document.getElementById('clock').textContent = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 updateClock();
 setInterval(updateClock, 10000);
+populateMindSweep();
 loadTab('inbox');
 </script>
 </body>

@@ -105,6 +105,31 @@ body.mindsweep-open .main{padding-right:340px}
 .walkthrough-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;width:100%;max-width:780px;margin-top:20px}
 .walkthrough-actions .triage-btn{padding:14px 12px;font-size:0.88rem;text-align:center}
 .walkthrough-empty{color:#9ba1ab;font-size:1rem;text-align:center;max-width:520px}
+
+/* Phase 4 — Today dashboard. Each "section" is a card; fields auto-save on blur. */
+.today-section{background:#1a1d27;border-radius:10px;padding:18px;margin-bottom:16px;border:1px solid #2d3139}
+.today-section h3{font-size:0.95rem;color:#7ec8a3;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.today-section h3 .count{font-size:0.74rem;color:#9ba1ab;font-weight:400}
+.today-field{margin-bottom:10px}
+.today-field:last-child{margin-bottom:0}
+.today-field label{display:flex;justify-content:space-between;font-size:0.76rem;color:#9ba1ab;margin-bottom:4px}
+.today-field input,.today-field textarea{width:100%;padding:8px 10px;border-radius:6px;border:1px solid #2d3139;background:#0f1117;color:#e8eaed;font-size:0.85rem;font-family:inherit;resize:vertical}
+.today-field textarea{min-height:64px}
+.today-field input:focus,.today-field textarea:focus{outline:none;border-color:#7ec8a3}
+.today-field .saved-flag{font-size:0.7rem;color:#7ec8a3;opacity:0;transition:opacity .2s}
+.today-field .saved-flag.show{opacity:1}
+.today-grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.today-todo{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 10px;background:#0f1117;border:1px solid #2d3139;border-radius:6px;margin-bottom:6px;gap:10px}
+.today-todo .body{flex:1;min-width:0}
+.today-todo .name{font-size:0.86rem;color:#e8eaed;word-break:break-word}
+.today-todo .meta{display:flex;gap:6px;margin-top:3px;flex-wrap:wrap}
+.today-todo .meta span{font-size:0.7rem;color:#9ba1ab;background:#1a1d27;padding:1px 6px;border-radius:4px}
+.today-todo button{padding:5px 10px;border-radius:6px;border:1px solid #2d3139;background:transparent;color:#7ec8a3;cursor:pointer;font-size:0.78rem;white-space:nowrap}
+.today-todo button:hover{background:#1a2e22;border-color:#7ec8a3}
+.today-todo button:disabled{opacity:.4;cursor:wait}
+.today-todo.completed{opacity:.45}
+.today-todo.completed .name{text-decoration:line-through}
+.today-empty{font-size:0.78rem;color:#5a6068;padding:4px 0;font-style:italic}
 </style>
 </head>
 <body>
@@ -121,16 +146,17 @@ body.mindsweep-open .main{padding-right:340px}
     <button onclick="toggleMindSweep()" title="Toggle MindSweep / Trigger Lists (press m)">🧠 MindSweep</button>
   </div>
 </header>
+<!-- Phase 4 — Today is the default landing tab. Order moves DO (Today) leftmost. -->
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('inbox')">📥 Inbox</button>
-  <button class="tab" onclick="switchTab('goals')">🎯 Goals</button>
-  <button class="tab" onclick="switchTab('projects')">📁 Projects</button>
+  <button class="tab active" onclick="switchTab('today')">📅 Today</button>
+  <button class="tab" onclick="switchTab('inbox')">📥 Inbox</button>
   <button class="tab" onclick="switchTab('nextactions')">✅ Next Actions</button>
+  <button class="tab" onclick="switchTab('projects')">📁 Projects</button>
+  <button class="tab" onclick="switchTab('goals')">🎯 Goals</button>
   <button class="tab" onclick="switchTab('waitingfor')">⏳ Waiting For</button>
   <button class="tab" onclick="switchTab('somedaymaybe')">💡 Someday</button>
   <button class="tab" onclick="switchTab('reference')">📚 Reference</button>
   <button class="tab" onclick="switchTab('tickler')">⏰ Tickler</button>
-  <button class="tab" onclick="switchTab('today')">📅 Today</button>
 </div>
 <div class="main">
   <div id="error-box" class="error-msg" style="display:none"></div>
@@ -212,7 +238,7 @@ async function apiFetchOk(url, opts) {
   return data;
 }
 
-let currentTab = 'inbox';
+let currentTab = 'today';
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -234,6 +260,7 @@ function showOk(msg) {
 }
 
 async function loadTab(tab) {
+  if (tab === 'today') return renderTodayDashboard();
   document.getElementById('item-list').replaceChildren(loadingNode());
   document.getElementById('stats-bar').replaceChildren();
   renderSectionToolbar(tab);
@@ -248,6 +275,186 @@ async function loadTab(tab) {
     showError(e.message);
     document.getElementById('item-list').replaceChildren(textNode('Error loading data — check API connection', 'loading'));
   }
+}
+
+// ---------------- Phase 4 — Today dashboard -----------------
+// The Today tab is NOT a generic list view. It's a daily-driver cockpit:
+//   1. Hard Landscape (Allen's sacred calendar — committed times only)
+//   2. Top 3 Outcomes (three concrete wins, fresh each morning)
+//   3. Tickler today (cross-DB query: Tickler items where Surface On = today)
+//   4. Must / Should / Could Do (Next Actions grouped by Priority)
+//   5. Daily Shutdown (Done / Moved forward / Still open / Capture for tomorrow)
+// Every text field auto-saves back to today's Today DB row on blur.
+function isoDateLocal(d) {
+  d = d || new Date();
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function sameLocalDate(notionDate, isoToday) {
+  // Notion dates come back as 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm:ssZ'. Compare just the date part.
+  if (!notionDate) return false;
+  return String(notionDate).slice(0, 10) === isoToday;
+}
+async function findOrCreateTodayRow(isoToday) {
+  const data = await apiFetchOk('/api/notion?section=today');
+  const existing = (data.pages || []).find(p => sameLocalDate(p.Date, isoToday));
+  if (existing) return existing;
+  const created = await apiFetchOk('/api/notion?section=today&action=add', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: `Today — ${isoToday}`, date: isoToday }),
+  });
+  return created.page;
+}
+async function renderTodayDashboard() {
+  // Today owns the whole main area — clear all the generic widgets.
+  document.getElementById('stats-bar').replaceChildren();
+  document.getElementById('add-form-container').replaceChildren();
+  document.getElementById('section-toolbar').replaceChildren();
+  const list = document.getElementById('item-list');
+  list.replaceChildren(loadingNode());
+  try {
+    const isoToday = isoDateLocal();
+    const todayRow = await findOrCreateTodayRow(isoToday);
+    const [tickData, naData] = await Promise.all([
+      apiFetchOk('/api/notion?section=tickler'),
+      apiFetchOk('/api/notion?section=nextactions'),
+    ]);
+    const ticklerToday = (tickData.pages || []).filter(p => sameLocalDate(p['Surface On'], isoToday));
+    const byPrio = (pr) => (naData.pages || []).filter(p => p.Priority === pr);
+    const frag = document.createDocumentFragment();
+    frag.appendChild(buildHardLandscapeSection(todayRow));
+    frag.appendChild(buildTopThreeSection(todayRow));
+    frag.appendChild(buildActionSection('⏰ Tickler today', ticklerToday, 'items whose Surface On = today', 'No tickler items surfacing today.'));
+    frag.appendChild(buildActionSection('🔴 Must Do (P1)', byPrio('P1'), 'Next Actions where Priority = P1', 'Nothing P1 right now — keep it light.'));
+    frag.appendChild(buildActionSection('🟡 Should Do (P2)', byPrio('P2'), 'Next Actions where Priority = P2', 'No P2 items.'));
+    frag.appendChild(buildActionSection('🔵 Could Do (P3)', byPrio('P3'), 'Next Actions where Priority = P3', 'No P3 items.'));
+    frag.appendChild(buildDailyShutdownSection(todayRow));
+    list.replaceChildren(frag);
+  } catch (e) {
+    showError(e.message);
+    list.replaceChildren(textNode('Error loading Today — check API connection', 'loading'));
+  }
+}
+function buildSection(title, count, helpText) {
+  const sec = document.createElement('div'); sec.className = 'today-section';
+  const h = document.createElement('h3');
+  h.appendChild(document.createTextNode(title));
+  if (count != null) {
+    const c = document.createElement('span'); c.className = 'count'; c.textContent = `(${count})`;
+    h.appendChild(c);
+  }
+  if (helpText) {
+    const help = document.createElement('span'); help.className = 'count'; help.textContent = '· ' + helpText;
+    h.appendChild(help);
+  }
+  sec.appendChild(h);
+  return sec;
+}
+function buildHardLandscapeSection(todayRow) {
+  const sec = buildSection('📌 Hard Landscape', null, 'day/time-specific commitments only — calendar is sacred');
+  sec.appendChild(buildAutoSavedField({
+    label: 'Appointments, meetings, time-blocks today',
+    value: todayRow['Hard Landscape'],
+    fieldKey: 'hardLandscape',
+    pageId: todayRow.id,
+    type: 'textarea',
+  }));
+  return sec;
+}
+function buildTopThreeSection(todayRow) {
+  const sec = buildSection('🎯 Top 3 Outcomes', null, 'three concrete wins that would make today a success');
+  const grid = document.createElement('div'); grid.className = 'today-grid-3';
+  grid.appendChild(buildAutoSavedField({ label: '#1 (primary)', value: todayRow['Outcome 1'], fieldKey: 'outcome1', pageId: todayRow.id, type: 'text' }));
+  grid.appendChild(buildAutoSavedField({ label: '#2',           value: todayRow['Outcome 2'], fieldKey: 'outcome2', pageId: todayRow.id, type: 'text' }));
+  grid.appendChild(buildAutoSavedField({ label: '#3',           value: todayRow['Outcome 3'], fieldKey: 'outcome3', pageId: todayRow.id, type: 'text' }));
+  sec.appendChild(grid);
+  return sec;
+}
+function buildAutoSavedField({ label, value, fieldKey, pageId, type }) {
+  const wrap = document.createElement('div'); wrap.className = 'today-field';
+  const lab = document.createElement('label');
+  lab.appendChild(document.createTextNode(label));
+  const savedFlag = document.createElement('span'); savedFlag.className = 'saved-flag'; savedFlag.textContent = '✓ saved';
+  lab.appendChild(savedFlag);
+  wrap.appendChild(lab);
+  const input = type === 'textarea' ? document.createElement('textarea') : document.createElement('input');
+  if (type !== 'textarea') input.type = 'text';
+  input.value = value || '';
+  input.dataset.last = input.value;
+  // Save on blur AND on debounced input — the architect flagged that
+  // switching tabs replaces children before blur fires, which could lose
+  // a sentence Mike just typed. 600ms keystroke debounce closes that hole.
+  let saveTimer = null;
+  const flushSave = async () => {
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    if (input.value === input.dataset.last) return;
+    const sending = input.value;
+    try {
+      await apiFetchOk(`/api/notion?section=today&id=${pageId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [fieldKey]: sending }),
+      });
+      input.dataset.last = sending;
+      savedFlag.classList.add('show');
+      setTimeout(() => savedFlag.classList.remove('show'), 1200);
+    } catch (e) { showError(e.message); }
+  };
+  input.addEventListener('input', () => {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(flushSave, 600);
+  });
+  input.addEventListener('blur', flushSave);
+  wrap.appendChild(input);
+  return wrap;
+}
+function buildActionSection(title, items, helpText, emptyText) {
+  const sec = buildSection(title, items.length, helpText);
+  if (!items.length) {
+    const empty = document.createElement('div'); empty.className = 'today-empty'; empty.textContent = emptyText;
+    sec.appendChild(empty);
+    return sec;
+  }
+  items.forEach(p => sec.appendChild(buildTodayTodo(p)));
+  return sec;
+}
+function buildTodayTodo(p) {
+  const row = document.createElement('div'); row.className = 'today-todo'; row.dataset.pageId = p.id;
+  const body = document.createElement('div'); body.className = 'body';
+  const name = document.createElement('div'); name.className = 'name'; name.textContent = p.Name || '(unnamed)';
+  body.appendChild(name);
+  const meta = document.createElement('div'); meta.className = 'meta';
+  const addMeta = (icon, text) => { if (!text) return; const s = document.createElement('span'); s.textContent = `${icon} ${text}`; meta.appendChild(s); };
+  if (Array.isArray(p.Context) && p.Context.length) addMeta('📍', p.Context.join(', '));
+  addMeta('⚡', p.Energy);
+  addMeta('→', p['Action When It Surfaces']);
+  if (Array.isArray(p.Area) && p.Area.length)       addMeta('📌', p.Area.join(', '));
+  if (meta.childElementCount) body.appendChild(meta);
+  row.appendChild(body);
+  const done = document.createElement('button'); done.textContent = '✓ Done';
+  done.title = 'Mark complete — archives the page in Notion';
+  done.addEventListener('click', async () => {
+    done.disabled = true;
+    try {
+      await apiFetchOk(`/api/notion?action=complete&id=${p.id}`, { method: 'POST' });
+      row.classList.add('completed');
+      done.remove();
+      showOk('✓ Done — archived');
+    } catch (e) { done.disabled = false; showError(e.message); }
+  });
+  row.appendChild(done);
+  return row;
+}
+function buildDailyShutdownSection(todayRow) {
+  const sec = buildSection('🌙 Daily Shutdown', null, 'end-of-day reflection — Allen\'s four buckets');
+  const grid = document.createElement('div'); grid.className = 'today-grid-3';
+  grid.appendChild(buildAutoSavedField({ label: '✓ Done',                 value: todayRow['Items Completed'],    fieldKey: 'itemsCompleted',     pageId: todayRow.id, type: 'textarea' }));
+  grid.appendChild(buildAutoSavedField({ label: '→ Moved forward',        value: todayRow['Items Moved Forward'], fieldKey: 'itemsMovedForward',  pageId: todayRow.id, type: 'textarea' }));
+  grid.appendChild(buildAutoSavedField({ label: '◐ Still open',           value: todayRow['Items Still Open'],   fieldKey: 'itemsStillOpen',     pageId: todayRow.id, type: 'textarea' }));
+  grid.appendChild(buildAutoSavedField({ label: '✚ Capture for tomorrow', value: todayRow['Capture for Tomorrow'],fieldKey: 'captureForTomorrow', pageId: todayRow.id, type: 'textarea' }));
+  sec.appendChild(grid);
+  return sec;
 }
 function loadingNode() {
   const d = document.createElement('div'); d.className = 'loading'; d.textContent = 'Loading'; return d;
@@ -717,7 +924,7 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 10000);
 populateMindSweep();
-loadTab('inbox');
+loadTab('today');
 </script>
 </body>
 </html>

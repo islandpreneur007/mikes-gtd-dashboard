@@ -77,6 +77,9 @@ const PROPERTY_BUILDERS = {
   itemsMovedForward:  (v) => ['Items Moved Forward',  { rich_text: [{ text: { content: String(v) } }] }],
   itemsStillOpen:     (v) => ['Items Still Open',     { rich_text: [{ text: { content: String(v) } }] }],
   captureForTomorrow: (v) => ['Capture for Tomorrow', { rich_text: [{ text: { content: String(v) } }] }],
+  // Phase 4 — added to Today DB. Allen's "sacred" calendar: day/time-specific
+  // commitments only. NOT a "I'd like to do this today" bucket.
+  hardLandscape:      (v) => ['Hard Landscape',       { rich_text: [{ text: { content: String(v) } }] }],
 };
 
 function toMultiSelect(v) {
@@ -162,6 +165,7 @@ function pageToBody(serialized) {
     itemsMovedForward:  serialized['Items Moved Forward'],
     itemsStillOpen:     serialized['Items Still Open'],
     captureForTomorrow: serialized['Capture for Tomorrow'],
+    hardLandscape:      serialized['Hard Landscape'],
   };
 }
 

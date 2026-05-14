@@ -90,6 +90,13 @@ const PROPERTY_BUILDERS = {
   // Phase 5 — Someday/Maybe DB also stores Area as `select`, not `multi_select`.
   // Same Phase-1 latent shape mismatch as Projects.
   somedayArea:        (v) => ['Area',                 { select:    { name: String(v) } }],
+  // Phase 7 — Goals DB Area is also `select`. Same latent Phase-1 issue surfaces
+  // when the Areas of Focus dashboard tries to aggregate goal counts per area.
+  goalArea:           (v) => ['Area',                 { select:    { name: String(v) } }],
+  // Goals Status is also `select` (options Moving / Attention / At Risk), not
+  // Notion's `status` type. The Phase 5 Edit modal's Goals Status field would
+  // otherwise 400 — architect Phase-7 carryover.
+  goalStatus:         (v) => ['Status',               { select:    { name: String(v) } }],
 
   // Phase 5 — Natural Planning fields added to the Projects DB.
   purpose:            (v) => ['Purpose',              { rich_text: [{ text: { content: String(v) } }] }],

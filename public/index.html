@@ -157,6 +157,37 @@ body.stuck-open .main{padding-left:360px}
 /* Phase 5 — Generic per-card actions row (for non-Inbox tabs). Reuses triage-btn styling. */
 .actions-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 
+/* Phase 7 — Vertical altitude badge (left rail). Runway at the bottom, 50k
+   at the top — Allen's canonical horizons. Click a row to jump to that tab. */
+.altitude-badge{position:fixed;top:118px;left:8px;bottom:8px;width:90px;background:#1a1d27;border:1px solid #2d3139;border-radius:8px;padding:8px 6px;display:flex;flex-direction:column;justify-content:space-between;z-index:6;font-size:0.66rem}
+.alt-level{padding:7px 6px;border-radius:5px;cursor:pointer;text-align:center;border:1px solid transparent;transition:background .12s,border-color .12s;line-height:1.25}
+.alt-level:hover{background:#0f1117;border-color:#3d4149}
+.alt-level.current{background:#0f1117;border-color:#7ec8a3}
+.alt-level.current .alt-ft{color:#7ec8a3}
+.alt-level.deferred{opacity:.4;cursor:not-allowed}
+.alt-level.deferred:hover{background:transparent;border-color:transparent}
+.alt-level.overdue::after{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:#e53e3e;margin-left:4px;vertical-align:middle}
+.alt-ft{display:block;font-weight:700;color:#e8eaed;font-size:0.7rem}
+.alt-label{display:block;color:#9ba1ab;font-size:0.62rem;margin-top:2px}
+body .main{padding-left:114px}
+@media (max-width:900px){
+  .altitude-badge{display:none}
+  body .main{padding-left:24px}
+}
+body.stuck-open .altitude-badge{visibility:hidden}
+
+/* Phase 7 — Last-reviewed badge + Mark reviewed button. */
+.reviewed-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:0.78rem;color:#9ba1ab}
+.reviewed-row.overdue{color:#fc8181}
+.reviewed-row button{padding:6px 10px;border-radius:6px;border:1px solid #2d3139;background:transparent;color:#e8eaed;cursor:pointer;font-size:0.78rem}
+.reviewed-row button:hover{border-color:#7ec8a3;color:#7ec8a3}
+
+/* Phase 7 — Area filter chip in section toolbar (active filter when drilling
+   from Areas of Focus tab into Projects / Goals / Next Actions). */
+.area-filter-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:14px;background:#1a2e22;border:1px solid #7ec8a3;color:#a7ddc1;font-size:0.78rem}
+.area-filter-pill button{margin-left:4px;background:transparent;border:none;color:#7ec8a3;cursor:pointer;font-size:0.85rem;line-height:1;padding:0 2px}
+.area-filter-pill button:hover{color:#fc8181}
+
 /* Phase 6 — Reference filter chips + tickler group headers. */
 .filter-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
 .filter-chip{padding:4px 10px;border-radius:14px;border:1px solid #2d3139;background:#0f1117;color:#9ba1ab;cursor:pointer;font-size:0.75rem}
@@ -214,18 +245,31 @@ body.stuck-open .main{padding-left:360px}
     <button onclick="toggleMindSweep()" title="Toggle MindSweep / Trigger Lists (press m)">🧠 MindSweep</button>
   </div>
 </header>
-<!-- Phase 4 — Today is the default landing tab. Order moves DO (Today) leftmost. -->
+<!-- Phase 4 — Today is the default landing tab. Order moves DO (Today) leftmost.
+     Phase 7 — Areas of Focus tab added between Goals and Waiting For. -->
 <div class="tabs">
   <button class="tab active" onclick="switchTab('today')">📅 Today</button>
   <button class="tab" onclick="switchTab('inbox')">📥 Inbox</button>
   <button class="tab" onclick="switchTab('nextactions')">✅ Next Actions</button>
   <button class="tab" onclick="switchTab('projects')">📁 Projects</button>
+  <button class="tab" onclick="switchTab('areasoffocus')">🧭 Areas of Focus</button>
   <button class="tab" onclick="switchTab('goals')">🎯 Goals</button>
   <button class="tab" onclick="switchTab('waitingfor')">⏳ Waiting For</button>
   <button class="tab" onclick="switchTab('somedaymaybe')">💡 Someday</button>
   <button class="tab" onclick="switchTab('reference')">📚 Reference</button>
   <button class="tab" onclick="switchTab('tickler')">⏰ Tickler</button>
 </div>
+
+<!-- Phase 7 — vertical altitude badge (left rail). Allen's canonical horizons.
+     50k Purpose + 40k Vision are deferred to v1.0.5 (rendered as ghost rows). -->
+<aside id="altitude-badge" class="altitude-badge" aria-label="GTD horizons">
+  <div class="alt-level deferred" data-horizon="50k"   title="50,000 ft — Purpose (lifecycle annually+; ships in v1.0.5)"><span class="alt-ft">50k</span><span class="alt-label">Purpose</span></div>
+  <div class="alt-level deferred" data-horizon="40k"   title="40,000 ft — Vision (annually; ships in v1.0.5)"><span class="alt-ft">40k</span><span class="alt-label">Vision</span></div>
+  <div class="alt-level"          data-horizon="30k"   title="30,000 ft — Goals (review quarterly)"><span class="alt-ft">30k</span><span class="alt-label">Goals</span></div>
+  <div class="alt-level"          data-horizon="20k"   title="20,000 ft — Areas of Focus (review monthly)"><span class="alt-ft">20k</span><span class="alt-label">Areas</span></div>
+  <div class="alt-level"          data-horizon="10k"   title="10,000 ft — Projects (review weekly)"><span class="alt-ft">10k</span><span class="alt-label">Projects</span></div>
+  <div class="alt-level"          data-horizon="runway" title="Runway — Next Actions (review daily)"><span class="alt-ft">Runway</span><span class="alt-label">Next Actions</span></div>
+</aside>
 <div class="main">
   <div id="error-box" class="error-msg" style="display:none"></div>
   <div id="toast" class="toast-ok" style="display:none"></div>
@@ -301,7 +345,35 @@ const TABS = {
   reference:    { title: '📚 Reference',     stats: ['Note','URL','File','Contact','Other'] },
   tickler:      { title: '⏰ Tickler',       stats: ['Surfacing today','Future','Past due'] },
   today:        { title: '📅 Today',         stats: ['Today','Past'] },
+  areasoffocus: { title: '🧭 Areas of Focus', stats: [] },
 };
+
+// Phase 7 — Horizons + last-reviewed cadences from System Guides p.5-6. Each
+// horizon maps to a dashboard tab; the altitude badge highlights the current.
+const HORIZONS = [
+  { key: '50k',    label: 'Purpose',         tab: null,            cadenceDays: 365, deferred: true },
+  { key: '40k',    label: 'Vision',          tab: null,            cadenceDays: 365, deferred: true },
+  { key: '30k',    label: 'Goals',           tab: 'goals',         cadenceDays: 92 },
+  { key: '20k',    label: 'Areas of Focus',  tab: 'areasoffocus',  cadenceDays: 30 },
+  { key: '10k',    label: 'Projects',        tab: 'projects',      cadenceDays: 7 },
+  { key: 'runway', label: 'Next Actions',    tab: 'nextactions',   cadenceDays: 1 },
+];
+const HORIZON_BY_TAB = Object.fromEntries(HORIZONS.filter(h => h.tab).map(h => [h.tab, h]));
+function lastReviewedKey(h) { return `gtd-last-reviewed-${h.key}`; }
+function getLastReviewed(h) {
+  const v = localStorage.getItem(lastReviewedKey(h));
+  return v ? new Date(v) : null;
+}
+function setLastReviewedNow(h) {
+  localStorage.setItem(lastReviewedKey(h), new Date().toISOString());
+}
+function daysSince(d) { return (Date.now() - d.getTime()) / 86400000; }
+function isHorizonOverdue(h) {
+  if (h.deferred) return false;
+  const last = getLastReviewed(h);
+  if (!last) return true; // never reviewed
+  return daysSince(last) > h.cadenceDays;
+}
 const AREAS = ['Career / Work','Health / Fitness','Relationships','Finances','Learning / Growth','Home / Logistics','Personal Systems'];
 const PRIORITIES = { inbox: ['P1','P2','P3','P4'], goals: ['🟢','🟡','🔴'], projects: ['Active','Waiting','Stalled','Someday'], nextactions: ['P1','P2','P3','P4'], waitingfor: ['Waiting'], somedaymaybe: ['Active','Someday'] };
 const CONTEXTS = ['@work','@home','@calls','@computer','@errands','@anywhere','@thinking'];
@@ -355,7 +427,9 @@ function showOk(msg) {
 }
 
 async function loadTab(tab) {
+  renderAltitudeBadge(tab);
   if (tab === 'today') return renderTodayDashboard();
+  if (tab === 'areasoffocus') return renderAreasOfFocus();
   document.getElementById('item-list').replaceChildren(loadingNode());
   document.getElementById('stats-bar').replaceChildren();
   renderSectionToolbar(tab);
@@ -370,6 +444,83 @@ async function loadTab(tab) {
     showError(e.message);
     document.getElementById('item-list').replaceChildren(textNode('Error loading data — check API connection', 'loading'));
   }
+}
+
+// ---------------- Phase 7 — Altitude badge, Areas of Focus tab, last-reviewed ----------------
+// Highlight the current horizon (if any), wire each row's click handler,
+// and surface the overdue red dot for horizons past their review cadence.
+function renderAltitudeBadge(activeTab) {
+  const badge = document.getElementById('altitude-badge');
+  if (!badge) return;
+  HORIZONS.forEach(h => {
+    const row = badge.querySelector(`.alt-level[data-horizon="${h.key}"]`);
+    if (!row) return;
+    row.classList.toggle('current', h.tab === activeTab);
+    row.classList.toggle('overdue', isHorizonOverdue(h));
+    // Re-bind click each render (cheap, idempotent — replaces stale handlers).
+    row.onclick = () => { if (!h.deferred && h.tab) switchTab(h.tab); };
+  });
+}
+
+// Phase 7 — Areas of Focus dashboard: 7 area cards, each showing active
+// project count + goal count. Click → drill into Projects / Goals filtered
+// by that area.
+async function renderAreasOfFocus() {
+  document.getElementById('stats-bar').replaceChildren();
+  document.getElementById('add-form-container').replaceChildren();
+  renderSectionToolbar('areasoffocus');
+  const list = document.getElementById('item-list');
+  list.replaceChildren(loadingNode());
+  try {
+    const [projData, goalData, naData] = await Promise.all([
+      apiFetchOk('/api/notion?section=projects'),
+      apiFetchOk('/api/notion?section=goals'),
+      apiFetchOk('/api/notion?section=nextactions'),
+    ]);
+    const counts = Object.fromEntries(AREAS.map(a => [a, { projects: 0, activeProjects: 0, goals: 0, nas: 0 }]));
+    const tally = (page, key) => {
+      const a = page.Area;
+      const areas = Array.isArray(a) ? a : (a ? [a] : []);
+      areas.forEach(area => {
+        if (!counts[area]) counts[area] = { projects: 0, activeProjects: 0, goals: 0, nas: 0 };
+        counts[area][key]++;
+        if (key === 'projects' && page.Status === 'Active') counts[area].activeProjects++;
+      });
+    };
+    (projData.pages || []).forEach(p => tally(p, 'projects'));
+    (goalData.pages || []).forEach(g => tally(g, 'goals'));
+    (naData.pages   || []).forEach(n => tally(n, 'nas'));
+    const frag = document.createDocumentFragment();
+    AREAS.forEach(area => frag.appendChild(buildAreaCard(area, counts[area])));
+    // Also surface any non-canonical area values that show up in the data.
+    Object.keys(counts).filter(a => !AREAS.includes(a)).forEach(area => frag.appendChild(buildAreaCard(area, counts[area])));
+    list.replaceChildren(frag);
+  } catch (e) {
+    showError(e.message);
+    list.replaceChildren(textNode('Error loading Areas of Focus — check API connection', 'loading'));
+  }
+}
+function buildAreaCard(area, c) {
+  c = c || { projects: 0, activeProjects: 0, goals: 0, nas: 0 };
+  const card = document.createElement('div'); card.className = 'item-card';
+  const header = document.createElement('div'); header.className = 'item-header';
+  const name = document.createElement('div'); name.className = 'item-name'; name.textContent = '📌 ' + area;
+  header.appendChild(name);
+  card.appendChild(header);
+  // Counts as a meta row.
+  const meta = document.createElement('div'); meta.className = 'meta';
+  const add = (icon, txt) => { const s = document.createElement('span'); s.textContent = `${icon} ${txt}`; meta.appendChild(s); };
+  add('📁', `${c.activeProjects} active / ${c.projects} total projects`);
+  add('🎯', `${c.goals} goals`);
+  add('✅', `${c.nas} next actions`);
+  card.appendChild(meta);
+  // Drill-down actions.
+  const row = document.createElement('div'); row.className = 'actions-row';
+  row.appendChild(makeActionBtn('→ Projects', 'jump', `View Projects in ${area}`, () => { currentAreaFilter = area; switchTab('projects'); }));
+  row.appendChild(makeActionBtn('→ Goals',    'jump', `View Goals in ${area}`,    () => { currentAreaFilter = area; switchTab('goals'); }));
+  row.appendChild(makeActionBtn('→ Next Actions', 'jump', `View Next Actions in ${area}`, () => { currentAreaFilter = area; switchTab('nextactions'); }));
+  card.appendChild(row);
+  return card;
 }
 
 // ---------------- Phase 5 — Modal helpers, Edit, Natural Planning wizard, Support, Stuck? ----------------
@@ -419,9 +570,10 @@ const EDIT_FIELDS = {
     { key: 'organizing',    label: 'Organizing',     type: 'textarea'                                                   },
   ],
   goals:        [
-    { key: 'name',   label: 'Name',           type: 'text'     },
-    { key: 'why',    label: 'Why It Matters', type: 'textarea' },
-    { key: 'status', label: 'Status',         type: 'select', options: ['🟢','🟡','🔴'] },
+    { key: 'name',       label: 'Name',           type: 'text'     },
+    { key: 'why',        label: 'Why It Matters', type: 'textarea' },
+    { key: 'goalStatus', label: 'Status',         type: 'select', options: ['Moving','Attention','At Risk'] },
+    { key: 'goalArea',   label: 'Area',           type: 'select', options: ['Work','Fitness','Health','Finances','Relationships','Family','Personal Life','Planning','Learning / Growth','Career / Work'] },
   ],
   waitingfor:   [
     { key: 'name',      label: 'Name',         type: 'text' },
@@ -1014,11 +1166,28 @@ function renderItems(tab, pages) {
   // Phase 6 — Reference: filter by Type chip + Tag substring. Tickler:
   // group by past-due / surfacing-today / future, sorted by Surface On.
   let toRender = pages;
-  if (tab === 'nextactions') toRender = applyNextActionsSort(pages);
-  if (tab === 'reference')   toRender = applyReferenceFilter(pages);
-  if (tab === 'tickler')     return renderTicklerGrouped(frag, list, pages);
+  // Phase 7 — drill-down area filter applies to Projects / Goals / NA / Someday.
+  if (currentAreaFilter && ['projects','goals','nextactions','somedaymaybe'].includes(tab)) {
+    toRender = applyAreaFilter(toRender);
+  }
+  if (tab === 'nextactions') toRender = applyNextActionsSort(toRender);
+  if (tab === 'reference')   toRender = applyReferenceFilter(toRender);
+  if (tab === 'tickler')     return renderTicklerGrouped(frag, list, toRender);
   toRender.forEach(p => frag.appendChild(buildItemCard(tab, p)));
   list.replaceChildren(frag);
+}
+
+// Phase 7 — keep items whose Area / Linked Area touches currentAreaFilter.
+// Different DBs store Area as multi_select (Inbox, NA, Goals, Someday) or
+// select (Projects, Someday/Maybe). The serialized page either has an array
+// or a single string. Compare flexibly.
+function applyAreaFilter(pages) {
+  if (!currentAreaFilter) return pages;
+  return pages.filter(p => {
+    const a = p.Area;
+    if (Array.isArray(a)) return a.includes(currentAreaFilter);
+    return a === currentAreaFilter;
+  });
 }
 
 // Phase 6 — apply current reference filter state to the page list.
@@ -1082,6 +1251,11 @@ let naSortKey = 'priority';
 // Tag matching is case-insensitive substring on any tag in the item's Tags array.
 let referenceTypeFilter = 'All';
 let referenceTagFilter  = '';
+
+// Phase 7 — Area drill-down filter. Set when Mike clicks an Area card on the
+// Areas of Focus tab. Applied to Projects / Goals / Next Actions / Someday
+// during their renderItems pass. Cleared via the section-toolbar pill.
+let currentAreaFilter = '';
 function applyNextActionsSort(pages) {
   const copy = pages.slice();
   if (naSortKey === 'priority') {
@@ -1448,6 +1622,36 @@ async function addItem(tab) {
 function renderSectionToolbar(tab) {
   const bar = document.getElementById('section-toolbar');
   bar.replaceChildren();
+  // Phase 7 — area filter pill (set when drilling from Areas of Focus).
+  if (currentAreaFilter && ['projects','goals','nextactions','somedaymaybe'].includes(tab)) {
+    const pill = document.createElement('span'); pill.className = 'area-filter-pill';
+    pill.appendChild(document.createTextNode(`📌 Filter: ${currentAreaFilter}`));
+    const clear = document.createElement('button'); clear.textContent = '×'; clear.title = 'Clear area filter';
+    clear.addEventListener('click', () => { currentAreaFilter = ''; loadTab(tab); });
+    pill.appendChild(clear);
+    bar.appendChild(pill);
+  }
+  // Phase 7 — Last-reviewed badge + Mark reviewed button for horizon tabs.
+  const horizon = HORIZON_BY_TAB[tab];
+  if (horizon) {
+    const wrap = document.createElement('span');
+    const overdue = isHorizonOverdue(horizon);
+    wrap.className = 'reviewed-row' + (overdue ? ' overdue' : '');
+    const last = getLastReviewed(horizon);
+    const lastText = last ? `last reviewed ${last.toISOString().slice(0,10)} (${Math.floor(daysSince(last))}d ago)` : 'never reviewed';
+    const cadenceTxt = horizon.cadenceDays === 1 ? 'daily' : horizon.cadenceDays === 7 ? 'weekly' : horizon.cadenceDays === 30 ? 'monthly' : horizon.cadenceDays === 92 ? 'quarterly' : 'annually';
+    wrap.appendChild(document.createTextNode(`${horizon.label} (${cadenceTxt}) — ${lastText}${overdue ? ' ⚠ overdue' : ''}`));
+    const btn = document.createElement('button'); btn.textContent = '🔄 Mark reviewed';
+    btn.title = `Stamp today as the last review of the ${horizon.label} horizon`;
+    btn.addEventListener('click', () => {
+      setLastReviewedNow(horizon);
+      renderAltitudeBadge(currentTab);
+      renderSectionToolbar(tab);
+      showOk(`✓ Marked ${horizon.label} reviewed`);
+    });
+    wrap.appendChild(btn);
+    bar.appendChild(wrap);
+  }
   if (tab === 'inbox') {
     const walk = document.createElement('button');
     walk.textContent = '▶ Process Inbox (walkthrough)';
@@ -1610,6 +1814,7 @@ updateClock();
 setInterval(updateClock, 10000);
 populateMindSweep();
 populateStuck();
+renderAltitudeBadge('today');
 loadTab('today');
 </script>
 </body>

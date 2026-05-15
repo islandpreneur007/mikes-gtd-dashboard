@@ -502,6 +502,30 @@ const ENERGIES = ['Deep Work','Admin','Communication','Errand','Maintenance','Pl
 // Static HTML can't hold a server secret, so the token lives in localStorage,
 // set once per device via a prompt. Must match GTD_AUTH_TOKEN on Vercel.
 const TOKEN_KEY = 'gtd-token';
+// Phase 10 — allow auto-provisioning a new device via ?set-token=... URL param.
+// Mike bookmarks one URL per device, opens it once, and never sees the prompt
+// again. The param is stripped from the address bar immediately after save so
+// it doesn't linger in history / screenshots. Runs at script-parse time so the
+// token is in localStorage before the boot block fires the first API call.
+// Threat model: anyone with read access to this URL (browser sync, history,
+// screen-share, edge access logs) gains full GTD access. Treat the bookmark as
+// ephemeral; rotate GTD_AUTH_TOKEN in Vercel if a URL ever leaks.
+(function consumeTokenFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get('set-token') || '';
+    const t = raw.trim();
+    // Reject empty, whitespace-bearing (would corrupt the header), or absurdly
+    // long tokens. A valid GTD token is a base64-ish string ~44 chars.
+    if (!t || /\s/.test(t) || t.length > 256) return;
+    localStorage.setItem(TOKEN_KEY, t);
+    params.delete('set-token');
+    const cleanQuery = params.toString();
+    const cleanUrl = window.location.pathname + (cleanQuery ? '?' + cleanQuery : '') + window.location.hash;
+    window.history.replaceState({}, '', cleanUrl);
+    console.info('GTD token provisioned from URL — open DevTools → Application → localStorage to verify gtd-token.');
+  } catch (_) { /* malformed URL — fall through to the prompt */ }
+})();
 function getToken() {
   let t = localStorage.getItem(TOKEN_KEY);
   if (!t) {

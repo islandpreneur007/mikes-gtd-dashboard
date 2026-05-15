@@ -1220,8 +1220,59 @@ function openNaturalPlanningWizard() {
 // Phase 5 — Support Material modal. Cross-DB query: Reference items whose
 // Linked Projects relation contains this project's id. Lists each as a clickable
 // link to its Notion page.
+// Phase 10b-followup (May 15 2026) — inline add form. The Phase 10b bundle
+// added the multi-select Linked Projects field to the Reference Edit modal,
+// but the natural "I'm on this Project, attach a resource to it" path still
+// needed a UI here. Now a Project card → 📚 Support button can also CREATE a
+// new Reference item pre-linked to this project, without leaving the modal.
 async function openSupportModal(project) {
-  const shell = makeModalShell(`📚 Support Material — ${project.Name || '(unnamed project)'}`, 'Reference items linked to this Project. Click to open in Notion.');
+  const shell = makeModalShell(`📚 Support Material — ${project.Name || '(unnamed project)'}`, 'Reference items linked to this Project. Add or click an existing one to open in Notion.');
+  // Inline add form — Name (required) + URL (optional, http(s) only) + Type +
+  // Tags. New refs are auto-linked to this Project via linkedProjects.
+  const addRow = document.createElement('div');
+  addRow.setAttribute('style', 'display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding:10px;background:#0f1117;border:1px solid #2d3139;border-radius:6px');
+  const fieldStyle = 'padding:6px 8px;border-radius:6px;border:1px solid #2d3139;background:#1a1d27;color:#e8eaed;font-size:0.85rem';
+  const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.placeholder = 'Name (required)…';
+  nameInput.setAttribute('style', fieldStyle + ';flex:1.5;min-width:120px');
+  const urlInput = document.createElement('input'); urlInput.type = 'text'; urlInput.placeholder = 'URL (optional)…';
+  urlInput.setAttribute('style', fieldStyle + ';flex:2;min-width:140px');
+  const typeSel = document.createElement('select'); typeSel.setAttribute('style', fieldStyle);
+  ['Note','URL','File','Contact','Other'].forEach(opt => {
+    const o = document.createElement('option'); o.value = opt; o.textContent = opt; typeSel.appendChild(o);
+  });
+  const tagsInput = document.createElement('input'); tagsInput.type = 'text'; tagsInput.placeholder = 'Tags (comma-sep)…';
+  tagsInput.setAttribute('style', fieldStyle + ';flex:1;min-width:100px');
+  const addBtn = document.createElement('button'); addBtn.textContent = '+ Add';
+  addBtn.setAttribute('style', 'padding:6px 12px;border-radius:6px;border:none;background:#7ec8a3;color:#0f1117;font-weight:600;cursor:pointer;font-size:0.85rem;white-space:nowrap');
+  addBtn.addEventListener('click', async () => {
+    const name = nameInput.value.trim();
+    if (!name) { showError('Reference needs a name'); nameInput.focus(); return; }
+    const url = urlInput.value.trim();
+    if (url && !/^https?:\/\//i.test(url)) { showError('URL must start with http:// or https://'); urlInput.focus(); return; }
+    addBtn.disabled = true;
+    try {
+      const body = {
+        name,
+        type: typeSel.value || (url ? 'URL' : 'Note'),
+        linkedProjects: project.id,
+        dateAdded: new Date().toISOString().slice(0, 10),
+      };
+      if (url) body.content = url;
+      if (tagsInput.value.trim()) body.tags = tagsInput.value.trim();
+      await apiFetchOk('/api/notion?section=reference&action=add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      showOk('+ Reference linked');
+      nameInput.value = ''; urlInput.value = ''; tagsInput.value = ''; typeSel.value = 'Note';
+      await renderSupportList(project, list);
+    } catch (e) { showError(e.message); }
+    finally { addBtn.disabled = false; }
+  });
+  addRow.append(nameInput, urlInput, typeSel, tagsInput, addBtn);
+  shell.appendChild(addRow);
+
   const list = document.createElement('div'); list.className = 'support-list';
   const loading = document.createElement('div'); loading.className = 'support-empty'; loading.textContent = 'Loading…';
   list.appendChild(loading);
@@ -1232,13 +1283,19 @@ async function openSupportModal(project) {
   actions.appendChild(close);
   shell.appendChild(actions);
   openModal(shell);
+  await renderSupportList(project, list);
+}
+// Extracted from openSupportModal so the inline add form can refresh after a
+// successful add without having to close+reopen the modal.
+async function renderSupportList(project, list) {
   try {
     const data = await apiFetchOk('/api/notion?section=reference');
+    if (!list.isConnected) return;
     const linked = (data.pages || []).filter(p => Array.isArray(p['Linked Projects']) && p['Linked Projects'].some(id => idsMatch(id, project.id)));
     list.replaceChildren();
     if (!linked.length) {
       const empty = document.createElement('div'); empty.className = 'support-empty';
-      empty.textContent = 'No Reference items linked to this Project yet. From the Reference tab, add or edit an item and set Linked Projects to include this one.';
+      empty.textContent = 'No Reference items linked to this Project yet. Use the form above to add one, or edit an existing Reference and set Linked Projects to include this one.';
       list.appendChild(empty);
       return;
     }

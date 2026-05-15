@@ -14,6 +14,9 @@ header h1{font-size:1.2rem;color:#fff;white-space:nowrap}
 .quick-add input:focus{outline:none;border-color:#7ec8a3}
 .quick-add button{padding:8px 14px;border-radius:6px;border:none;background:#7ec8a3;color:#0f1117;font-weight:600;cursor:pointer;font-size:0.85rem;white-space:nowrap}
 .quick-add button:hover{background:#6bb890}
+.quick-add .dest-toggle{background:#2d3139;color:#a7ddc1;border:1px solid #3a3f4a}
+.quick-add .dest-toggle:hover{background:#3a3f4a}
+.quick-add .dest-toggle.reference{background:#4a5568;color:#e8eaed;border-color:#5a6068}
 .quick-add .hint{font-size:0.7rem;color:#5a6068;margin-left:6px;white-space:nowrap}
 .header-status{display:flex;gap:14px;align-items:center;font-size:0.8rem;color:#9ba1ab}
 .header-status .clock{color:#9ba1ab}
@@ -335,8 +338,9 @@ body.stuck-open .altitude-badge{visibility:hidden}
 <header>
   <h1>🎯 Mike's GTD</h1>
   <div class="quick-add">
-    <input id="quick-add-input" type="text" placeholder="Capture anything into Inbox..." aria-label="Quick capture">
-    <button onclick="quickCapture()" title="Add to Inbox (Enter)">+ Inbox</button>
+    <input id="quick-add-input" type="text" placeholder="Capture anything…  paste a URL → auto Reference" aria-label="Quick capture">
+    <button id="quick-dest-toggle" class="dest-toggle" onclick="toggleQuickDest()" title="Toggle destination: Inbox or Reference (paste a URL to auto-switch)">📥 Inbox</button>
+    <button onclick="quickCapture()" title="Capture (Enter)">+ Add</button>
     <span class="hint">press <strong>n</strong> to focus</span>
   </div>
   <div class="header-status">
@@ -944,6 +948,9 @@ const EDIT_FIELDS = {
     { key: 'context',    label: 'Context',  type: 'select', options: ['@work','@home','@calls','@computer','@errands','@anywhere','@thinking'] },
     { key: 'energy',     label: 'Energy',   type: 'select', options: ['Deep Work','Admin','Communication','Errand','Maintenance','Planning'] },
     { key: 'area',       label: 'Area',     type: 'select', options: AREAS                 },
+    // Phase 10b — single-select relation to Projects. NA → Project, with the
+    // Projects side showing back-relation `Linked Actions` (auto-synced).
+    { key: 'projectRef', label: 'Project',  type: 'singleselect-relation', target: 'projects' },
   ],
   projects: [
     { key: 'name',          label: 'Name',           type: 'text'                                                       },
@@ -981,6 +988,9 @@ const EDIT_FIELDS = {
     { key: 'tags',          label: 'Tags (comma-separated)',  type: 'text' },
     { key: 'areaOfFocus',   label: 'Area of Focus (comma-separated)', type: 'text' },
     { key: 'dateAdded',     label: 'Date Added',   type: 'date' },
+    // Phase 10b — multi-select relation to Projects. The 📚 Support button on
+    // a Project card reads the back-relation; this is the write side.
+    { key: 'linkedProjects', label: 'Linked Projects', type: 'multiselect-relation', target: 'projects' },
   ],
   tickler:      [
     { key: 'name',            label: 'Name',                    type: 'text' },
@@ -1005,6 +1015,8 @@ const KEY_TO_NOTION = {
   itemsMovedForward: 'Items Moved Forward', itemsStillOpen: 'Items Still Open',
   captureForTomorrow: 'Capture for Tomorrow',
   purpose: 'Purpose', vision: 'Vision', brainstorming: 'Brainstorming', organizing: 'Organizing',
+  // Phase 10b — NA→Project (single-select); Project-side back-relation Linked Actions.
+  projectRef: 'Project', linkedActions: 'Linked Actions',
 };
 function prefillValue(key, page) {
   const notionKey = KEY_TO_NOTION[key];
@@ -1017,6 +1029,10 @@ function openEditModal(tab, page) {
   if (!fields) { showError(`No edit form for ${tab}`); return; }
   const shell = makeModalShell(`Edit ${TABS[tab].title.replace(/^[^A-Za-z]+/, '')}`, 'Changes are PATCHed to Notion when you click Save.');
   const inputs = {};
+  // Phase 10b — per-field value reader so multi-select relations (where
+  // `.value` only returns the first selected option) can return a
+  // comma-separated id list that `toRelationArray` understands.
+  const getValueFns = {};
   fields.forEach(f => {
     let ctrl;
     if (f.type === 'textarea') { ctrl = document.createElement('textarea'); }
@@ -1026,8 +1042,23 @@ function openEditModal(tab, page) {
       ctrl.appendChild(blank);
       f.options.forEach(o => { const op = document.createElement('option'); op.value = o; op.textContent = o; ctrl.appendChild(op); });
     } else if (f.type === 'date') { ctrl = document.createElement('input'); ctrl.type = 'date'; }
+    else if (f.type === 'singleselect-relation' || f.type === 'multiselect-relation') {
+      ctrl = document.createElement('select');
+      if (f.type === 'multiselect-relation') ctrl.multiple = true;
+      const loading = document.createElement('option'); loading.value = ''; loading.textContent = 'Loading…'; loading.disabled = true;
+      ctrl.appendChild(loading);
+      // Kick off async fetch — modal stays usable for other fields while this loads.
+      loadRelationOptions(ctrl, f, page);
+      // Custom reader: emit comma-separated ids for the wire (toRelationArray
+      // accepts strings or arrays). Empty string = clear the relation.
+      getValueFns[f.key] = () => Array.from(ctrl.selectedOptions).map(o => o.value).filter(Boolean).join(',');
+    }
     else                          { ctrl = document.createElement('input'); ctrl.type = 'text'; }
-    ctrl.value = prefillValue(f.key, page);
+    // Non-relation prefill: synchronous from page properties.
+    if (f.type !== 'singleselect-relation' && f.type !== 'multiselect-relation') {
+      ctrl.value = prefillValue(f.key, page);
+    }
+    if (!getValueFns[f.key]) getValueFns[f.key] = () => ctrl.value.trim();
     inputs[f.key] = ctrl;
     shell.appendChild(makeModalRow(f.label, ctrl));
   });
@@ -1040,9 +1071,14 @@ function openEditModal(tab, page) {
     try {
       const body = {};
       fields.forEach(f => {
-        const v = inputs[f.key].value.trim();
-        // Empty strings still get sent so Mike can clear a field. Notion treats '' as empty rich_text.
-        body[f.key] = v;
+        // Architect-fix — skip fields flagged with data-multi-overflow so we
+        // never silently collapse a multi-link relation into a single-link
+        // value (or worse, clear it entirely via allowClears).
+        if (inputs[f.key]?.dataset?.multiOverflow === 'true') return;
+        // Empty values still get sent so Mike can clear a field. Notion treats
+        // '' as empty rich_text and [] as empty relation/multi_select via
+        // buildProperties(allowClears).
+        body[f.key] = getValueFns[f.key]();
       });
       await apiFetchOk(`/api/notion?section=${tab}&id=${page.id}`, {
         method: 'PATCH',
@@ -1057,6 +1093,63 @@ function openEditModal(tab, page) {
   actions.append(cancel, save);
   shell.appendChild(actions);
   openModal(shell);
+}
+
+// Phase 10b — fetch target-section pages, repopulate the relation `<select>`
+// with one option per page, and mark currently-linked pages as selected. Used
+// by the Edit modal's singleselect-relation / multiselect-relation field types.
+// Architect-fix: when a singleselect-relation finds >1 existing linked pages
+// (created via Notion's web UI), disable the select with a clear warning and
+// stash `data-multi-overflow="true"` so the save handler skips the field
+// entirely — preventing silent data loss from collapsing N relations to 1.
+// Also guards against orphaned DOM nodes if the user tab-switches mid-fetch.
+async function loadRelationOptions(ctrl, fieldDef, page) {
+  try {
+    const data = await apiFetchOk(`/api/notion?section=${fieldDef.target}`);
+    if (!ctrl.isConnected) return;
+    const prefillIds = prefillRelationIds(fieldDef.key, page);
+    const overflow = fieldDef.type === 'singleselect-relation' && prefillIds.length > 1;
+    ctrl.replaceChildren();
+    if (overflow) {
+      // Read-only state: existing multi-project relation cannot be safely
+      // narrowed via a single-select. Refer Mike to Notion for that edit.
+      const warn = document.createElement('option');
+      warn.value = '';
+      warn.textContent = `⚠ Linked to ${prefillIds.length} projects in Notion — edit there to change`;
+      ctrl.appendChild(warn);
+      ctrl.disabled = true;
+      ctrl.dataset.multiOverflow = 'true';
+      return;
+    }
+    if (fieldDef.type === 'singleselect-relation') {
+      // Single-select needs a blank option so Mike can clear the link.
+      const blank = document.createElement('option'); blank.value = ''; blank.textContent = `${fieldDef.label}…`;
+      ctrl.appendChild(blank);
+    }
+    const items = (data.pages || []).map(p => ({ id: p.id, name: p.Name || '(unnamed)' }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    items.forEach(it => {
+      const op = document.createElement('option');
+      op.value = it.id;
+      op.textContent = it.name;
+      if (prefillIds.some(id => idsMatch(id, it.id))) op.selected = true;
+      ctrl.appendChild(op);
+    });
+  } catch (e) {
+    if (!ctrl.isConnected) return;
+    ctrl.replaceChildren();
+    const errOpt = document.createElement('option'); errOpt.value = ''; errOpt.textContent = `Failed to load: ${e.message}`; errOpt.disabled = true;
+    ctrl.appendChild(errOpt);
+  }
+}
+// Phase 10b — pull the relation's current ids off a serialized page. Notion
+// relation properties serialize as arrays of page ids on the wire.
+function prefillRelationIds(key, page) {
+  const notionKey = KEY_TO_NOTION[key];
+  const v = notionKey ? page[notionKey] : null;
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string' && v) return [v];
+  return [];
 }
 
 // Phase 5 — Natural Planning wizard. Replaces the simple Project add form
@@ -1560,6 +1653,10 @@ function renderItems(tab, pages) {
   }
   if (tab === 'nextactions') toRender = applyNextActionsSort(toRender);
   if (tab === 'reference')   toRender = applyReferenceFilter(toRender);
+  // Phase 10b — drill-down project filter (set by Project card's "🔗 N actions"
+  // button). Applies to NA tab only since that's the only tab carrying the
+  // Project relation.
+  if (currentProjectFilter && tab === 'nextactions') toRender = applyProjectFilter(toRender);
   if (tab === 'tickler')     return renderTicklerGrouped(frag, list, toRender);
   toRender.forEach(p => frag.appendChild(buildItemCard(tab, p)));
   list.replaceChildren(frag);
@@ -1575,6 +1672,17 @@ function applyAreaFilter(pages) {
     const a = p.Area;
     if (Array.isArray(a)) return a.includes(currentAreaFilter);
     return a === currentAreaFilter;
+  });
+}
+// Phase 10b — keep NAs whose Project relation contains currentProjectFilter
+// (a Notion page id). NA.Project is serialized as an array of ids.
+function applyProjectFilter(pages) {
+  if (!currentProjectFilter) return pages;
+  return pages.filter(p => {
+    const rel = p.Project;
+    if (Array.isArray(rel)) return rel.some(id => idsMatch(id, currentProjectFilter));
+    if (typeof rel === 'string' && rel) return idsMatch(rel, currentProjectFilter);
+    return false;
   });
 }
 
@@ -1644,6 +1752,11 @@ let referenceTagFilter  = '';
 // Areas of Focus tab. Applied to Projects / Goals / Next Actions / Someday
 // during their renderItems pass. Cleared via the section-toolbar pill.
 let currentAreaFilter = '';
+// Phase 10b — Project drill-down: set by a Project card's "🔗 N actions"
+// button. `currentProjectFilter` holds the project page id; the matching
+// human-readable name is stashed in `currentProjectFilterLabel` for the pill.
+let currentProjectFilter = '';
+let currentProjectFilterLabel = '';
 
 // Phase 9 — per-tab card-grid mode (vs default list). Click the layout toggle
 // in section toolbar to flip. Persists in localStorage so Mike's preference
@@ -1715,6 +1828,17 @@ function buildActionsRow(tab, page, card) {
   if (tab === 'projects') {
     row.appendChild(makeActionBtn('🧠 Stuck?', 'stuck', 'Open the Project Planning Trigger List drawer', () => toggleStuck()));
     row.appendChild(makeActionBtn('📚 Support', 'support', 'Show linked Reference items (Project Support Material)', () => openSupportModal(page)));
+    // Phase 10b — show the count of Next Actions queued under this Project and
+    // click-to-filter the NA tab. Uses the Notion-synced Linked Actions
+    // back-relation; the count tracks the relation, not the Project's single
+    // `Next Action` text field (which is Allen's separate "very next physical
+    // action" discipline).
+    const linkedCount = Array.isArray(page['Linked Actions']) ? page['Linked Actions'].length : 0;
+    row.appendChild(makeActionBtn(`🔗 ${linkedCount} action${linkedCount === 1 ? '' : 's'}`, 'linked', 'Show Next Actions queued on this Project', () => {
+      currentProjectFilter = page.id;
+      currentProjectFilterLabel = page.Name || '(unnamed project)';
+      switchTab('nextactions');
+    }));
   }
   // Phase 6 — Reference cards get an Open button that pops a content modal.
   if (tab === 'reference') {
@@ -1799,6 +1923,10 @@ function buildTriageRow(p, card) {
 }
 async function runTriage(buttonEl, page, cardEl, action) {
   if (action === 'nextaction') return openDeferPopover(page, cardEl);
+  // Phase 10b — Reference move opens an inline popover so URL + Tags can be
+  // captured during triage (otherwise Mike would have to triage, jump to
+  // Reference, edit, save — 4 clicks for what should be 1).
+  if (action === 'reference')  return openReferencePopover(page, cardEl);
   setRowBusy(cardEl, true);
   try {
     if (action === 'donow' || action === 'trash') {
@@ -1864,6 +1992,48 @@ function openDeferPopover(page, cardEl) {
   pop.append(help, date, tickler, na, cancel);
   cardEl.appendChild(pop);
   date.focus();
+}
+
+// Phase 10b — Reference triage popover. Captures URL + Tags + linked Project
+// at triage time so Mike doesn't have to triage-then-edit. Empty URL → Type=Note.
+// Async-populates the project select; safe to Save before it finishes loading.
+function openReferencePopover(page, cardEl) {
+  if (cardEl.querySelector('.defer-popover')) return;
+  const pop = document.createElement('div'); pop.className = 'defer-popover';
+  const help = document.createElement('div'); help.className = 'defer-help';
+  help.textContent = 'Optional: paste a URL, add tags, or link a Project. Save with empty fields for a plain Note.';
+  const url = document.createElement('input'); url.type = 'text'; url.placeholder = 'URL (optional, http:// or https://)';
+  url.setAttribute('style', 'flex:1;min-width:200px;padding:6px 8px;border-radius:6px;border:1px solid #2d3139;background:#1a1d27;color:#e8eaed;font-size:0.8rem');
+  const tags = document.createElement('input'); tags.type = 'text'; tags.placeholder = 'Tags (comma-separated)';
+  tags.setAttribute('style', 'flex:1;min-width:160px;padding:6px 8px;border-radius:6px;border:1px solid #2d3139;background:#1a1d27;color:#e8eaed;font-size:0.8rem');
+  const projSel = document.createElement('select'); projSel.setAttribute('style', 'padding:6px 8px;border-radius:6px;border:1px solid #2d3139;background:#1a1d27;color:#e8eaed;font-size:0.8rem');
+  const blank = document.createElement('option'); blank.value = ''; blank.textContent = 'Link Project (optional)…'; projSel.appendChild(blank);
+  const loading = document.createElement('option'); loading.value = ''; loading.textContent = 'Loading…'; loading.disabled = true; projSel.appendChild(loading);
+  populateProjectSelect(projSel, '');
+  const save = document.createElement('button'); save.textContent = '→ Reference (save)';
+  const cancel = document.createElement('button'); cancel.textContent = 'Cancel';
+  save.addEventListener('click', async () => {
+    const u = url.value.trim();
+    if (u && !/^https?:\/\//i.test(u)) { showError('URL must start with http:// or https://'); url.focus(); return; }
+    setRowBusy(cardEl, true);
+    try {
+      const body = { toSection: 'reference', type: u ? 'URL' : 'Note', dateAdded: new Date().toISOString().slice(0, 10) };
+      if (u) body.content = u;
+      if (tags.value.trim()) body.tags = tags.value.trim();
+      if (projSel.value) body.linkedProjects = projSel.value;
+      await apiFetchOk(`/api/notion?section=inbox&action=move&id=${page.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      showOk('→ Moved to Reference');
+      if (walkthroughActive) walkthroughAdvance(); else removeCard(cardEl);
+    } catch (e) { setRowBusy(cardEl, false); showError(e.message); }
+  });
+  cancel.addEventListener('click', () => pop.remove());
+  pop.append(help, url, tags, projSel, save, cancel);
+  cardEl.appendChild(pop);
+  url.focus();
 }
 
 // ---------------- Walkthrough mode (Mode B) -----------------
@@ -1934,7 +2104,10 @@ function renderAddForm(tab) {
   // Phase 5 — Projects use the Natural Planning wizard (section-toolbar button).
   // Tickler / Today / Reference: no inline add form; capture flows through the
   // Inbox quick-add bar and then a triage move (per spec — GTD's Clarify step).
-  if (tab === 'tickler' || tab === 'today' || tab === 'reference' || tab === 'projects') return;
+  // Phase 10b — Reference now has a direct add form (was previously inbox-only
+  // capture + triage move). Tickler/Today/Projects still bypass: Tickler/Today
+  // are date-driven, Projects use the Natural Planning wizard.
+  if (tab === 'tickler' || tab === 'today' || tab === 'projects') return;
 
   const form = document.createElement('div'); form.className = 'add-form';
   const h3 = document.createElement('h3'); h3.textContent = `+ Add to ${TABS[tab].title}`;
@@ -1960,6 +2133,15 @@ function renderAddForm(tab) {
     row1.appendChild(makeSelect({ id: 'f-context', placeholder: 'Context...', options: CONTEXTS }));
     row1.appendChild(makeSelect({ id: 'f-energy', placeholder: 'Energy...', options: ENERGIES }));
     row1.appendChild(makeSelect({ id: 'f-area', placeholder: 'Area...', options: AREAS }));
+    // Phase 10b — optional Project select. Async-populated from Projects DB.
+    // When the user is drilling from a Project (currentProjectFilter set),
+    // pre-select that project so newly captured NAs land in the right bucket.
+    const projSel = document.createElement('select');
+    projSel.id = 'f-projectRef';
+    const blank = document.createElement('option'); blank.value = ''; blank.textContent = 'Project (optional)…'; projSel.appendChild(blank);
+    const loading = document.createElement('option'); loading.value = ''; loading.textContent = 'Loading…'; loading.disabled = true; projSel.appendChild(loading);
+    row1.appendChild(projSel);
+    populateProjectSelect(projSel, currentProjectFilter);
   } else if (tab === 'waitingfor') {
     row1.appendChild(makeInput({ id: 'f-waitingOn', placeholder: 'Waiting on...', style: 'flex:2' }));
     row1.appendChild(makeInput({ id: 'f-need', placeholder: 'Need...', style: 'flex:1' }));
@@ -1967,6 +2149,12 @@ function renderAddForm(tab) {
     row1.appendChild(makeInput({ id: 'f-followUp', type: 'date', style: 'flex:1' }));
   } else if (tab === 'somedaymaybe') {
     row1.appendChild(makeSelect({ id: 'f-area', placeholder: 'Area...', options: AREAS }));
+  } else if (tab === 'reference') {
+    // Phase 10b — direct Reference capture: URL + Type + Tags inline. Submit
+    // logic in addItem auto-picks Type=URL when the URL field is non-empty.
+    row1.appendChild(makeInput({ id: 'f-content', placeholder: 'URL (optional)...', style: 'flex:2' }));
+    row1.appendChild(makeSelect({ id: 'f-type', placeholder: 'Type...', options: ['Note','URL','File','Contact','Other'] }));
+    row1.appendChild(makeInput({ id: 'f-tags', placeholder: 'Tags (comma-sep)...', style: 'flex:1' }));
   }
   form.appendChild(row1);
 
@@ -1997,6 +2185,34 @@ function makeSelect({ id, placeholder, options }) {
   });
   return sel;
 }
+// Phase 10b — async-populate a <select> with one option per Project page.
+// Optionally pre-selects `selectId` so a Project-drill creates new NAs already
+// linked. Failure leaves the select in a degraded "Failed to load" state so
+// Mike can still submit without a project. Bails if the target node has been
+// detached (Mike tab-switched during the fetch) to avoid orphan-DOM writes.
+async function populateProjectSelect(selectEl, selectId) {
+  try {
+    const data = await apiFetchOk('/api/notion?section=projects');
+    if (!selectEl.isConnected) return;
+    selectEl.replaceChildren();
+    const blank = document.createElement('option'); blank.value = ''; blank.textContent = 'Project (optional)…';
+    selectEl.appendChild(blank);
+    (data.pages || [])
+      .map(p => ({ id: p.id, name: p.Name || '(unnamed)' }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .forEach(it => {
+        const op = document.createElement('option');
+        op.value = it.id; op.textContent = it.name;
+        if (selectId && idsMatch(selectId, it.id)) op.selected = true;
+        selectEl.appendChild(op);
+      });
+  } catch (e) {
+    if (!selectEl.isConnected) return;
+    selectEl.replaceChildren();
+    const errOpt = document.createElement('option'); errOpt.value = ''; errOpt.textContent = `Failed: ${e.message}`; errOpt.disabled = true;
+    selectEl.appendChild(errOpt);
+  }
+}
 async function addItem(tab) {
   const name = document.getElementById('f-name')?.value?.trim();
   if (!name) { showError('Please enter a name'); return; }
@@ -2005,9 +2221,19 @@ async function addItem(tab) {
   const getVal = id => document.getElementById(id)?.value;
   if (tab === 'inbox')        { if (getVal('f-priority')) body.priority = getVal('f-priority'); if (getVal('f-area')) body.area = getVal('f-area'); }
   else if (tab === 'goals')   { if (get('f-why')) body.why = get('f-why'); if (getVal('f-status')) body.status = getVal('f-status'); }
-  else if (tab === 'nextactions') { if (getVal('f-priority')) body.priority = getVal('f-priority'); if (getVal('f-context')) body.context = getVal('f-context'); if (getVal('f-energy')) body.energy = getVal('f-energy'); if (getVal('f-area')) body.area = getVal('f-area'); }
+  else if (tab === 'nextactions') { if (getVal('f-priority')) body.priority = getVal('f-priority'); if (getVal('f-context')) body.context = getVal('f-context'); if (getVal('f-energy')) body.energy = getVal('f-energy'); if (getVal('f-area')) body.area = getVal('f-area'); if (getVal('f-projectRef')) body.projectRef = getVal('f-projectRef'); }
   else if (tab === 'waitingfor') { if (get('f-waitingOn')) body.waitingOn = get('f-waitingOn'); if (get('f-need')) body.need = get('f-need'); if (getVal('f-since')) body.since = getVal('f-since'); if (getVal('f-followUp')) body.followUp = getVal('f-followUp'); }
   else if (tab === 'somedaymaybe') { if (getVal('f-area')) body.somedayArea = getVal('f-area'); }
+  else if (tab === 'reference') {
+    const content = get('f-content');
+    const typeVal = getVal('f-type');
+    const tagsVal = get('f-tags');
+    if (content) body.content = content;
+    // Auto-pick Type when blank: URL if a URL was entered, Note otherwise.
+    body.type = typeVal || (content && /^https?:\/\//i.test(content) ? 'URL' : 'Note');
+    if (tagsVal) body.tags = tagsVal;
+    body.dateAdded = new Date().toISOString().slice(0, 10);
+  }
   try {
     await apiFetchOk(`/api/notion?section=${tab}&action=add`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     document.getElementById('f-name').value = '';
@@ -2059,6 +2285,16 @@ function renderSectionToolbar(tab) {
     toggle.title = 'Toggle between list and card-grid layouts';
     toggle.addEventListener('click', () => toggleGridMode(tab));
     bar.appendChild(toggle);
+  }
+  // Phase 10b — project filter pill (set when drilling from a Project card's
+  // "🔗 N actions" button).
+  if (currentProjectFilter && tab === 'nextactions') {
+    const pill = document.createElement('span'); pill.className = 'area-filter-pill';
+    pill.appendChild(document.createTextNode(`🔗 Project: ${currentProjectFilterLabel || '(unnamed)'}`));
+    const clear = document.createElement('button'); clear.textContent = '×'; clear.title = 'Clear project filter';
+    clear.addEventListener('click', () => { currentProjectFilter = ''; currentProjectFilterLabel = ''; loadTab(tab); });
+    pill.appendChild(clear);
+    bar.appendChild(pill);
   }
   // Phase 7 — area filter pill (set when drilling from Areas of Focus).
   if (currentAreaFilter && ['projects','goals','nextactions','somedaymaybe'].includes(tab)) {
@@ -2160,19 +2396,66 @@ function renderSectionToolbar(tab) {
 }
 
 // ---------------- Quick-add bar -----------------
+// Phase 10b — dual-destination quick capture. The toggle next to the input
+// flips between Inbox (Allen-orthodox: everything through Inbox + Clarify) and
+// Reference (URL/note shortcut for fast knowledge collection). Pasting a URL
+// auto-switches to Reference on the fly via the `input` event listener wired
+// in the boot block.
+let quickAddDest = 'inbox';
+function toggleQuickDest() {
+  quickAddDest = quickAddDest === 'inbox' ? 'reference' : 'inbox';
+  updateQuickDestUi();
+}
+function updateQuickDestUi() {
+  const btn = document.getElementById('quick-dest-toggle');
+  if (!btn) return;
+  btn.textContent = quickAddDest === 'inbox' ? '📥 Inbox' : '📚 Reference';
+  btn.classList.toggle('reference', quickAddDest === 'reference');
+}
+function maybeSuggestReference() {
+  // Strict http(s)://. No bare-domain auto-detect — too easy to surprise Mike.
+  const inp = document.getElementById('quick-add-input');
+  if (!inp) return;
+  const v = inp.value.trim();
+  if (/^https?:\/\//i.test(v) && quickAddDest === 'inbox') {
+    quickAddDest = 'reference';
+    updateQuickDestUi();
+  }
+}
 async function quickCapture() {
   const inp = document.getElementById('quick-add-input');
   const text = inp.value.trim();
   if (!text) { inp.focus(); return; }
   try {
-    await apiFetchOk('/api/notion?section=inbox&action=add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: text }),
-    });
+    if (quickAddDest === 'reference') {
+      const isUrl = /^https?:\/\//i.test(text);
+      const body = {
+        name: text,
+        type: isUrl ? 'URL' : 'Note',
+        dateAdded: new Date().toISOString().slice(0, 10),
+      };
+      if (isUrl) body.content = text;
+      await apiFetchOk('/api/notion?section=reference&action=add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      showOk('+ Reference');
+      if (currentTab === 'reference') loadTab('reference');
+    } else {
+      await apiFetchOk('/api/notion?section=inbox&action=add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: text }),
+      });
+      showOk('+ Inbox');
+      if (currentTab === 'inbox') loadTab('inbox');
+    }
     inp.value = '';
-    showOk('+ Inbox');
-    if (currentTab === 'inbox') loadTab('inbox');
+    // Reset destination so the next capture starts at the safe default. The
+    // input event listener will re-switch to Reference if Mike pastes another URL.
+    quickAddDest = 'inbox';
+    updateQuickDestUi();
   } catch (e) { showError(e.message); }
 }
 
@@ -2269,6 +2552,9 @@ renderAltitudeBadge('today');
 highlightPhaseStrip('today');
 const initialActive = document.querySelector('.tab.active');
 applyTabPhaseColor(initialActive, 'today');
+// Phase 10b — wire the URL auto-detect on the quick-add input so pasting an
+// http(s) URL flips the destination toggle to Reference automatically.
+document.getElementById('quick-add-input')?.addEventListener('input', maybeSuggestReference);
 loadTab('today');
 </script>
 </body>

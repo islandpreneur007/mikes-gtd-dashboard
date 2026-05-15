@@ -106,6 +106,16 @@ const PROPERTY_BUILDERS = {
   // Project Support Material — the two-way relation from Projects back to Reference.
   // (Reference side already exists as `linkedProjects`.)
   supportMaterial:    (v) => ['Support Material',     { relation:  toRelationArray(v) }],
+  // Phase 10b — Next Action → Project relation (single-select in UI, stored as
+  // a Notion relation array). The Projects side gets a synced `Linked Actions`
+  // back-relation. Lets Mike see all NAs queued under a Project, while the
+  // Project's existing `Next Action` text field stays as Allen's "the very next
+  // physical action" discipline.
+  projectRef:         (v) => ['Project',              { relation:  toRelationArray(v) }],
+  // Architect-fix (Phase 10b review): `Linked Actions` is a Notion-synced
+  // back-relation. Writes to synced relations are non-spec; intentionally NOT
+  // listed as a builder so PROPERTY_BUILDERS[key] returns undefined and the
+  // value is dropped at line ~138. `serializePage` still exposes it for reads.
 };
 
 function toMultiSelect(v) {
@@ -222,6 +232,11 @@ function pageToBody(serialized) {
     brainstorming:      serialized.Brainstorming,
     organizing:         serialized.Organizing,
     supportMaterial:    serialized['Support Material'],
+    // Phase 10b — NA→Project relation. `Linked Actions` is the synced back-
+    // relation on Projects and is read via serializePage directly when needed;
+    // intentionally not surfaced here so it can never accidentally flow into
+    // a buildProperties write.
+    projectRef:         serialized.Project,
   };
 }
 

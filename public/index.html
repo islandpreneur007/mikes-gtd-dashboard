@@ -182,6 +182,65 @@ body.stuck-open .altitude-badge{visibility:hidden}
 .reviewed-row button{padding:6px 10px;border-radius:6px;border:1px solid #2d3139;background:transparent;color:#e8eaed;cursor:pointer;font-size:0.78rem}
 .reviewed-row button:hover{border-color:#7ec8a3;color:#7ec8a3}
 
+/* Phase 9 — Canonical XPLANE color palette (mvp-scope.md visual conventions).
+   - Orange   #dd6b14 — DO / engagement (Today)
+   - Blue     #3182ce — PROCESS / Clarify (Inbox triage, Weekly Review setup)
+   - Gray     #4a5568 — ORGANIZE / storage (NA / Projects / Waiting / Someday / Reference / Tickler)
+   - Green    #7ec8a3 — COLLECT / capture (Inbox + quick-add)
+   - Gold     #dd9e14 — REVIEW (Weekly Review, Areas, Goals horizons) */
+:root{
+  --phase-do:       #dd6b14;
+  --phase-process:  #3182ce;
+  --phase-organize: #4a5568;
+  --phase-collect:  #7ec8a3;
+  --phase-review:   #dd9e14;
+}
+
+/* Phase 9 — 5-phase nav strip above the tab bar. Always-visible orientation
+   reference (Allen's canonical Mastering Workflow phases). The current tab's
+   phase chip is highlighted; others sit at half-opacity. */
+.phase-strip{display:flex;gap:4px;padding:6px 8px;background:#0f1117;border-bottom:1px solid #2d3139;position:sticky;top:65px;z-index:8;overflow-x:auto}
+.phase-chip{flex:1;padding:5px 10px;border-radius:6px;text-align:center;font-size:0.66rem;letter-spacing:1px;font-weight:700;color:#fff;opacity:.35;transition:opacity .15s, transform .15s;white-space:nowrap;min-width:90px}
+.phase-chip.active{opacity:1;transform:scale(1.04)}
+.phase-chip.collect  {background:var(--phase-collect)}
+.phase-chip.process  {background:var(--phase-process)}
+.phase-chip.organize {background:var(--phase-organize)}
+.phase-chip.review   {background:var(--phase-review)}
+.phase-chip.doaction {background:var(--phase-do)}
+.tabs{top:108px}  /* shift down to clear the phase strip */
+
+/* Phase 9 — color-code the active tab's underline by its phase. Falls back to
+   the default green if a tab somehow isn't mapped. */
+.tab.active{border-bottom-color:var(--phase-default,#7ec8a3);color:var(--phase-default,#7ec8a3)}
+.tab.active.phase-collect  {border-bottom-color:var(--phase-collect); color:var(--phase-collect)}
+.tab.active.phase-process  {border-bottom-color:var(--phase-process); color:var(--phase-process)}
+.tab.active.phase-organize {border-bottom-color:var(--phase-organize);color:#c4cad3}
+.tab.active.phase-review   {border-bottom-color:var(--phase-review);  color:var(--phase-review)}
+.tab.active.phase-doaction {border-bottom-color:var(--phase-do);      color:var(--phase-do)}
+
+/* Phase 9 — card-grid mode toggle. Click → list view becomes a responsive
+   grid of compact cards. State stored per tab in cardGridTabs Set. */
+.item-list.grid-mode{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;max-height:none}
+.item-list.grid-mode .item-card{margin-bottom:0}
+.layout-toggle{padding:6px 10px;border-radius:6px;border:1px solid #2d3139;background:transparent;color:#9ba1ab;cursor:pointer;font-size:0.78rem}
+.layout-toggle:hover{border-color:#7ec8a3;color:#7ec8a3}
+.layout-toggle.active{border-color:#7ec8a3;color:#7ec8a3;background:#1a2e22}
+
+/* Phase 9 — re-skin Weekly Review chrome to canonical REVIEW gold. */
+.review-progress .fill{background:var(--phase-review)}
+.review-progress .count{color:var(--phase-review)}
+.review-phase h3{color:var(--phase-review)}
+.review-step .step-actions button{color:var(--phase-review);border-color:#3d3a14}
+.review-step .step-actions button:hover{background:#382a14}
+.review-footer button.primary{background:var(--phase-review);color:#1a1d27;border-color:var(--phase-review)}
+.review-footer button.primary:hover{background:#c08c11}
+
+/* Phase 9 — 12-tip help modal trigger + modal body sizing. Uses the existing
+   modal-overlay infrastructure. */
+.tip-list{list-style:none;padding:0;margin:0;counter-reset:tip}
+.tip-list li{position:relative;padding:10px 12px 10px 40px;background:#0f1117;border:1px solid #2d3139;border-radius:6px;margin-bottom:6px;font-size:0.86rem;color:#c4cad3;line-height:1.45;counter-increment:tip}
+.tip-list li::before{content:counter(tip);position:absolute;left:10px;top:10px;width:22px;height:22px;background:var(--phase-do);color:#fff;border-radius:50%;text-align:center;line-height:22px;font-size:0.72rem;font-weight:700}
+
 /* Phase 8 — Weekly Review tab. Allen's 10-step / 3-phase ceremony, with live
    counts pulled from Notion and persistent checkbox state in localStorage. */
 .review-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px 14px;background:#1a1d27;border:1px solid #2d3139;border-radius:8px}
@@ -284,8 +343,20 @@ body.stuck-open .altitude-badge{visibility:hidden}
     <span class="clock" id="clock"></span>
     <span class="sync" id="sync-status">● Synced</span>
     <button onclick="toggleMindSweep()" title="Toggle MindSweep / Trigger Lists (press m)">🧠 MindSweep</button>
+    <button onclick="openTwelveTipModal()" title="Allen's 12-tip stress-reduction list (press ?)">?</button>
   </div>
 </header>
+
+<!-- Phase 9 — 5-phase nav strip (Collect / Process / Organize / Review / Do).
+     Always-visible reminder of where the active tab sits in Allen's Mastering
+     Workflow cycle. Chip colors are the canonical XPLANE palette. -->
+<div class="phase-strip" id="phase-strip" aria-label="GTD phases">
+  <div class="phase-chip collect"  data-phase="collect">COLLECT</div>
+  <div class="phase-chip process"  data-phase="process">PROCESS</div>
+  <div class="phase-chip organize" data-phase="organize">ORGANIZE</div>
+  <div class="phase-chip review"   data-phase="review">REVIEW</div>
+  <div class="phase-chip doaction" data-phase="doaction">DO</div>
+</div>
 <!-- Phase 4 — Today is the default landing tab. Order moves DO (Today) leftmost.
      Phase 7 — Areas of Focus tab added between Goals and Waiting For. -->
 <div class="tabs">
@@ -454,11 +525,44 @@ async function apiFetchOk(url, opts) {
 }
 
 let currentTab = 'today';
+
+// Phase 9 — tab → phase mapping (Allen's 5 Phases of Mastering Workflow).
+// The phase strip highlights the chip for the active tab's phase; the active
+// tab button itself takes on that phase's accent color. Tabs that arguably
+// straddle phases (e.g. Inbox = COLLECT + PROCESS via triage) are mapped to
+// their PRIMARY intent per the spec's nav metaphor.
+const PHASE_BY_TAB = {
+  today:        'doaction',  // DO
+  inbox:        'collect',   // COLLECT (triage = PROCESS but Inbox tab is primarily COLLECT)
+  nextactions:  'organize',
+  projects:     'organize',
+  waitingfor:   'organize',
+  somedaymaybe: 'organize',
+  reference:    'organize',
+  tickler:      'organize',
+  areasoffocus: 'review',
+  goals:        'review',
+  weeklyreview: 'review',
+};
+function highlightPhaseStrip(tab) {
+  const phase = PHASE_BY_TAB[tab] || 'organize';
+  document.querySelectorAll('.phase-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.phase === phase);
+  });
+}
+function applyTabPhaseColor(activeBtn, tab) {
+  if (!activeBtn) return;
+  ['phase-collect','phase-process','phase-organize','phase-review','phase-doaction'].forEach(c => activeBtn.classList.remove(c));
+  const phase = PHASE_BY_TAB[tab];
+  if (phase) activeBtn.classList.add('phase-' + phase);
+}
+
 function switchTab(tab) {
   currentTab = tab;
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active', 'phase-collect', 'phase-process', 'phase-organize', 'phase-review', 'phase-doaction'));
   const btn = document.querySelector(`.tab[onclick="switchTab('${tab}')"]`);
-  if (btn) btn.classList.add('active');
+  if (btn) { btn.classList.add('active'); applyTabPhaseColor(btn, tab); }
+  highlightPhaseStrip(tab);
   loadTab(tab);
 }
 function showError(msg) {
@@ -1401,6 +1505,8 @@ function renderStats(tab, pages) {
 // 7-button triage row (Mode A); other tabs get a smaller actions row (Phase 5).
 function renderItems(tab, pages) {
   const list = document.getElementById('item-list');
+  // Phase 9 — apply card-grid mode CSS class based on per-tab preference.
+  list.classList.toggle('grid-mode', cardGridTabs.has(tab));
   const frag = document.createDocumentFragment();
   // Phase 5 — Active Project Limit warning. Allen recommends max 5–7 active
   // projects; the dashboard becomes self-policing.
@@ -1514,6 +1620,16 @@ let referenceTagFilter  = '';
 // Areas of Focus tab. Applied to Projects / Goals / Next Actions / Someday
 // during their renderItems pass. Cleared via the section-toolbar pill.
 let currentAreaFilter = '';
+
+// Phase 9 — per-tab card-grid mode (vs default list). Click the layout toggle
+// in section toolbar to flip. Persists in localStorage so Mike's preference
+// survives reloads.
+const cardGridTabs = new Set(JSON.parse(localStorage.getItem('gtd-grid-tabs') || '[]'));
+function toggleGridMode(tab) {
+  if (cardGridTabs.has(tab)) cardGridTabs.delete(tab); else cardGridTabs.add(tab);
+  localStorage.setItem('gtd-grid-tabs', JSON.stringify(Array.from(cardGridTabs)));
+  loadTab(tab);
+}
 function applyNextActionsSort(pages) {
   const copy = pages.slice();
   if (naSortKey === 'priority') {
@@ -1877,9 +1993,49 @@ async function addItem(tab) {
 }
 
 // ---------------- Section toolbar — per-tab actions ----------------
+// Phase 9 — 12-tip stress-reduction modal (from Moehring poster, mvp-scope §12).
+// Triggered by the `?` button in the header or the `?` keyboard shortcut.
+const TWELVE_TIPS = [
+  'Always have a collection tool close by.',
+  "Only use your inboxes as your inboxes; don't use your entire office, house, briefcase, or car.",
+  'Decide Outcomes & Next Actions as soon as things show up.',
+  'Do most 2-min actions immediately if you plan to ever do them at all.',
+  "End meetings by clarifying outcomes, deciding Next Actions, and who's responsible.",
+  "Don't allow slips of paper & meeting notes to sit unprocessed.",
+  'Use your calendar only for things that absolutely have to get done that day.',
+  'List actual Very Next Actions, not vague "stuff" or Projects in disguise.',
+  'Put ALL your multi-step open loops on your Projects list.',
+  'Use and trust your lists to remind you, not your Project support materials.',
+  'Do your weekly review … weekly.',
+  'Review your higher altitudes for Outcomes and Next Actions.',
+];
+function openTwelveTipModal() {
+  const shell = makeModalShell('💡 12-Tip Stress-Reduction List', "Allen's permanent guardrails from the Mastering Workflow poster. Read when overwhelmed; pick one to recommit to.");
+  const ul = document.createElement('ul'); ul.className = 'tip-list';
+  TWELVE_TIPS.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+  shell.appendChild(ul);
+  const actions = document.createElement('div'); actions.className = 'modal-actions';
+  const close = document.createElement('button'); close.textContent = 'Close'; close.addEventListener('click', closeModal);
+  actions.appendChild(close);
+  shell.appendChild(actions);
+  openModal(shell);
+}
+
 function renderSectionToolbar(tab) {
   const bar = document.getElementById('section-toolbar');
   bar.replaceChildren();
+  // Phase 9 — layout toggle on tabs that have list rendering (not Today,
+  // Areas of Focus, or Weekly Review — those have custom layouts).
+  const HAS_GRID_TOGGLE = ['inbox','nextactions','projects','goals','waitingfor','somedaymaybe','reference','tickler'];
+  if (HAS_GRID_TOGGLE.includes(tab)) {
+    const toggle = document.createElement('button');
+    const isGrid = cardGridTabs.has(tab);
+    toggle.className = 'layout-toggle' + (isGrid ? ' active' : '');
+    toggle.textContent = isGrid ? '▦ Card grid' : '☰ List';
+    toggle.title = 'Toggle between list and card-grid layouts';
+    toggle.addEventListener('click', () => toggleGridMode(tab));
+    bar.appendChild(toggle);
+  }
   // Phase 7 — area filter pill (set when drilling from Areas of Focus).
   if (currentAreaFilter && ['projects','goals','nextactions','somedaymaybe'].includes(tab)) {
     const pill = document.createElement('span'); pill.className = 'area-filter-pill';
@@ -2061,6 +2217,19 @@ document.addEventListener('keydown', (e) => {
   }
   if (e.key === 'n' || e.key === 'N') { e.preventDefault(); document.getElementById('quick-add-input').focus(); }
   else if (e.key === 'm' || e.key === 'M') { e.preventDefault(); toggleMindSweep(); }
+  else if (e.key === '?')                  { e.preventDefault(); openTwelveTipModal(); }
+});
+
+// Phase 9 — Phase-8 architect carryover: storage event listener for multi-tab
+// Weekly Review state sync. If another browser tab updates the review state,
+// re-render the Weekly Review tab if it's the one Mike's currently looking at.
+window.addEventListener('storage', (e) => {
+  if (e.key === REVIEW_STATE_KEY && currentTab === 'weeklyreview') loadTab('weeklyreview');
+  if (e.key === 'gtd-grid-tabs') {
+    cardGridTabs.clear();
+    JSON.parse(e.newValue || '[]').forEach(t => cardGridTabs.add(t));
+    loadTab(currentTab);
+  }
 });
 
 // ---------------- Boot -----------------
@@ -2073,6 +2242,9 @@ setInterval(updateClock, 10000);
 populateMindSweep();
 populateStuck();
 renderAltitudeBadge('today');
+highlightPhaseStrip('today');
+const initialActive = document.querySelector('.tab.active');
+applyTabPhaseColor(initialActive, 'today');
 loadTab('today');
 </script>
 </body>

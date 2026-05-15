@@ -182,6 +182,47 @@ body.stuck-open .altitude-badge{visibility:hidden}
 .reviewed-row button{padding:6px 10px;border-radius:6px;border:1px solid #2d3139;background:transparent;color:#e8eaed;cursor:pointer;font-size:0.78rem}
 .reviewed-row button:hover{border-color:#7ec8a3;color:#7ec8a3}
 
+/* Phase 8 — Weekly Review tab. Allen's 10-step / 3-phase ceremony, with live
+   counts pulled from Notion and persistent checkbox state in localStorage. */
+.review-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px 14px;background:#1a1d27;border:1px solid #2d3139;border-radius:8px}
+.review-progress .bar{flex:1;height:8px;background:#0f1117;border-radius:4px;overflow:hidden}
+.review-progress .fill{height:100%;background:#7ec8a3;transition:width .3s ease}
+.review-progress .count{font-size:0.85rem;color:#7ec8a3;font-weight:600;min-width:64px;text-align:right}
+.review-meta{font-size:0.78rem;color:#9ba1ab;margin-bottom:16px}
+.review-phase{margin-bottom:24px}
+.review-phase h3{font-size:1rem;color:#7ec8a3;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #2d3139;text-transform:uppercase;letter-spacing:1px}
+.review-step{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;background:#1a1d27;border:1px solid #2d3139;border-radius:8px;margin-bottom:8px;transition:opacity .15s}
+.review-step.checked{opacity:.55}
+.review-step.checked .step-title{text-decoration:line-through;color:#9ba1ab}
+.review-step input[type=checkbox]{margin-top:3px;width:18px;height:18px;accent-color:#7ec8a3;cursor:pointer;flex-shrink:0}
+.review-step .step-body{flex:1;min-width:0}
+.review-step .step-row1{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.review-step .step-num{font-size:0.78rem;color:#5a6068;font-weight:600;min-width:18px}
+.review-step .step-title{font-size:0.92rem;color:#e8eaed;font-weight:600}
+.review-step .step-count{font-size:0.72rem;color:#9ba1ab;background:#0f1117;border:1px solid #2d3139;padding:2px 8px;border-radius:10px}
+.review-step .step-count.warn{color:#f6d06a;border-color:#dd9e14}
+.review-step .step-help{font-size:0.8rem;color:#9ba1ab;margin-top:4px;line-height:1.45}
+.review-step .step-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.review-step .step-actions button{padding:5px 10px;border-radius:6px;border:1px solid #2d3139;background:#0f1117;color:#7ec8a3;cursor:pointer;font-size:0.76rem}
+.review-step .step-actions button:hover{background:#1a2e22}
+.review-footer{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:24px;padding-top:16px;border-top:1px solid #2d3139}
+.review-footer button{padding:8px 14px;border-radius:6px;border:1px solid #2d3139;background:transparent;color:#e8eaed;cursor:pointer;font-size:0.85rem}
+.review-footer button.primary{background:#7ec8a3;color:#0f1117;border-color:#7ec8a3;font-weight:600}
+.review-footer button.primary:hover{background:#6bb890}
+.review-footer button:hover{border-color:#7ec8a3;color:#7ec8a3}
+.review-footer .footer-info{font-size:0.76rem;color:#9ba1ab;margin-left:auto}
+.xplane-map{margin-top:32px;padding:18px;background:#0f1117;border:1px solid #2d3139;border-radius:8px}
+.xplane-map h3{font-size:0.85rem;color:#9ba1ab;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px}
+.xplane-flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:0.78rem}
+.xplane-bubble{padding:10px 14px;border-radius:14px;font-weight:600;text-align:center;min-width:96px}
+.xplane-bubble.collect  {background:#1a2e22;border:1px solid #7ec8a3;color:#a7ddc1}
+.xplane-bubble.process  {background:#1a2638;border:1px solid #3182ce;color:#9ec5e6}
+.xplane-bubble.organize {background:#2d2d2d;border:1px solid #4a5568;color:#c4cad3}
+.xplane-bubble.review   {background:#382a14;border:1px solid #dd9e14;color:#f6d06a}
+.xplane-bubble.doaction {background:#3d1d0c;border:1px solid #dd6b14;color:#fbb377}
+.xplane-arrow{color:#5a6068;font-size:1.1rem}
+.xplane-caption{font-size:0.74rem;color:#9ba1ab;margin-top:10px;line-height:1.5}
+
 /* Phase 7 — Area filter chip in section toolbar (active filter when drilling
    from Areas of Focus tab into Projects / Goals / Next Actions). */
 .area-filter-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:14px;background:#1a2e22;border:1px solid #7ec8a3;color:#a7ddc1;font-size:0.78rem}
@@ -258,6 +299,7 @@ body.stuck-open .altitude-badge{visibility:hidden}
   <button class="tab" onclick="switchTab('somedaymaybe')">💡 Someday</button>
   <button class="tab" onclick="switchTab('reference')">📚 Reference</button>
   <button class="tab" onclick="switchTab('tickler')">⏰ Tickler</button>
+  <button class="tab" onclick="switchTab('weeklyreview')">📋 Weekly Review</button>
 </div>
 
 <!-- Phase 7 — vertical altitude badge (left rail). Allen's canonical horizons.
@@ -346,6 +388,7 @@ const TABS = {
   tickler:      { title: '⏰ Tickler',       stats: ['Surfacing today','Future','Past due'] },
   today:        { title: '📅 Today',         stats: ['Today','Past'] },
   areasoffocus: { title: '🧭 Areas of Focus', stats: [] },
+  weeklyreview: { title: '📋 Weekly Review',  stats: [] },
 };
 
 // Phase 7 — Horizons + last-reviewed cadences from System Guides p.5-6. Each
@@ -366,6 +409,11 @@ function getLastReviewed(h) {
 }
 function setLastReviewedNow(h) {
   localStorage.setItem(lastReviewedKey(h), new Date().toISOString());
+}
+// Phase 8 — Weekly Review's "complete" action stamps multiple horizons in one
+// ceremony. Architect Phase 7 carry-over: avoid scattered setLastReviewedNow.
+function markReviewedHorizons(keys) {
+  HORIZONS.filter(h => keys.includes(h.key)).forEach(setLastReviewedNow);
 }
 function daysSince(d) { return (Date.now() - d.getTime()) / 86400000; }
 function isHorizonOverdue(h) {
@@ -430,6 +478,7 @@ async function loadTab(tab) {
   renderAltitudeBadge(tab);
   if (tab === 'today') return renderTodayDashboard();
   if (tab === 'areasoffocus') return renderAreasOfFocus();
+  if (tab === 'weeklyreview') return renderWeeklyReview();
   document.getElementById('item-list').replaceChildren(loadingNode());
   document.getElementById('stats-bar').replaceChildren();
   renderSectionToolbar(tab);
@@ -521,6 +570,215 @@ function buildAreaCard(area, c) {
   row.appendChild(makeActionBtn('→ Next Actions', 'jump', `View Next Actions in ${area}`, () => { currentAreaFilter = area; switchTab('nextactions'); }));
   card.appendChild(row);
   return card;
+}
+
+// ---------------- Phase 8 — Weekly Review ----------------
+// Allen's 10-step / 3-phase ceremony from System Guides p.8. Each step shows
+// live counts from the relevant Notion DB, links to its tab, and persists its
+// checked state in localStorage so a partial review resumes on next visit.
+// When the user clicks "Mark all reviewed" the runway+10k horizons get stamped
+// (Areas/Goals are monthly/quarterly cycles — outside the weekly ceremony).
+
+const WEEKLY_REVIEW_STEPS = [
+  { phase: 'GET CLEAR',    n: 1,  title: 'Collect Loose Papers and Materials',     help: 'Gather receipts, business cards, post-its, anything physical. Get it all into your Inbox.' },
+  { phase: 'GET CLEAR',    n: 2,  title: 'Get "IN" to Zero',                       help: 'Process every Inbox item with the Clarify decision tree (Inbox tab → Process Inbox walkthrough) until the count is zero.', jumpTab: 'inbox', countKey: 'inbox' },
+  { phase: 'GET CLEAR',    n: 3,  title: 'Empty Your Head (using Trigger Lists)',  help: "Open the MindSweep drawer. Walk Allen's Personal + Professional Trigger Lists; capture anything that surfaces into the Inbox.", openMindSweep: true },
+  { phase: 'GET CURRENT',  n: 4,  title: 'Review Action Lists',                    help: 'Skim every Next Action. Cross off completed. Notice stuck ones — what is the very next physical action?', jumpTab: 'nextactions', countKey: 'nextactions' },
+  { phase: 'GET CURRENT',  n: 5,  title: 'Review Previous Calendar Data',          help: 'Scan back through the past week’s calendar. Items completed cleanly? Items that need follow-up captured into Inbox?' },
+  { phase: 'GET CURRENT',  n: 6,  title: 'Review Upcoming Calendar',               help: 'Scan ahead 2–4 weeks. Anything needs preparation? Travel logistics? Action items to capture?' },
+  { phase: 'GET CURRENT',  n: 7,  title: 'Review Waiting For List',                help: 'For each item: is the wait still on? Do I need to chase? Anything ready to promote into Next Actions?', jumpTab: 'waitingfor', countKey: 'waitingfor' },
+  { phase: 'GET CURRENT',  n: 8,  title: 'Review Project (and Larger Outcome) Lists', help: 'For every Active project: still moving? Has a defined Next Action? Active count within the 5–7 limit?', jumpTab: 'projects', countKey: 'projects.active', warnIf: c => c > 7, warnMsg: 'over the 5-7 limit' },
+  { phase: 'GET CURRENT',  n: 9,  title: 'Review Any Relevant Checklists',         help: 'Checklists you maintain (Morning routine, Pre-flight, Onboarding, etc.). Anything to surface or update?' },
+  { phase: 'GET CREATIVE', n: 10, title: 'Review Someday/Maybe List',              help: 'Anything to activate (move to Projects)? Anything to discard? Anything sparking now?', jumpTab: 'somedaymaybe', countKey: 'somedaymaybe' },
+  { phase: 'GET CREATIVE', n: 11, title: 'Be Creative and Courageous',             help: 'What is bold and worth doing? Capture into Inbox if it sparks something. Promote ambitious-but-real items into Projects.' },
+];
+const REVIEW_STATE_KEY = 'gtd-weekly-review-state';
+function loadReviewState() {
+  try { return JSON.parse(localStorage.getItem(REVIEW_STATE_KEY)) || { checked: [], startedAt: null, completedAt: null }; }
+  catch { return { checked: [], startedAt: null, completedAt: null }; }
+}
+function saveReviewState(s) { localStorage.setItem(REVIEW_STATE_KEY, JSON.stringify(s)); }
+function clearReviewState()   { localStorage.removeItem(REVIEW_STATE_KEY); }
+
+async function renderWeeklyReview() {
+  document.getElementById('stats-bar').replaceChildren();
+  document.getElementById('add-form-container').replaceChildren();
+  document.getElementById('section-toolbar').replaceChildren();
+  const list = document.getElementById('item-list');
+  list.replaceChildren(loadingNode());
+
+  // Fetch live counts from every DB the checklist references.
+  let counts = {};
+  try {
+    const [inboxR, naR, waitR, projR, sdR] = await Promise.all([
+      apiFetchOk('/api/notion?section=inbox'),
+      apiFetchOk('/api/notion?section=nextactions'),
+      apiFetchOk('/api/notion?section=waitingfor'),
+      apiFetchOk('/api/notion?section=projects'),
+      apiFetchOk('/api/notion?section=somedaymaybe'),
+    ]);
+    counts = {
+      inbox:            (inboxR.pages || []).length,
+      nextactions:      (naR.pages    || []).length,
+      waitingfor:       (waitR.pages  || []).length,
+      'projects.active':(projR.pages  || []).filter(p => p.Status === 'Active').length,
+      somedaymaybe:     (sdR.pages    || []).length,
+    };
+  } catch (e) {
+    showError(e.message);
+    list.replaceChildren(textNode('Error loading counts — check API connection', 'loading'));
+    return;
+  }
+
+  const state = loadReviewState();
+  if (!state.startedAt) { state.startedAt = new Date().toISOString(); saveReviewState(state); }
+  const checkedSet = new Set(state.checked);
+
+  const frag = document.createDocumentFragment();
+
+  // Header: progress bar + meta.
+  const total = WEEKLY_REVIEW_STEPS.length;
+  const progress = document.createElement('div'); progress.className = 'review-progress';
+  const label = document.createElement('span'); label.textContent = 'Progress';
+  const bar = document.createElement('div'); bar.className = 'bar';
+  const fill = document.createElement('div'); fill.className = 'fill';
+  bar.appendChild(fill);
+  const count = document.createElement('span'); count.className = 'count';
+  progress.append(label, bar, count);
+  const updateProgress = () => {
+    const done = checkedSet.size;
+    fill.style.width = `${Math.round(done/total*100)}%`;
+    count.textContent = `${done} / ${total}`;
+  };
+  updateProgress();
+  frag.appendChild(progress);
+
+  const meta = document.createElement('div'); meta.className = 'review-meta';
+  meta.textContent = `Started ${new Date(state.startedAt).toLocaleString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}. ` +
+    `Allen recommends this ceremony weekly. State auto-saves; you can resume any time.`;
+  frag.appendChild(meta);
+
+  // Group by phase.
+  const byPhase = {};
+  WEEKLY_REVIEW_STEPS.forEach(s => { (byPhase[s.phase] ||= []).push(s); });
+  Object.keys(byPhase).forEach(phaseName => {
+    const phaseEl = document.createElement('div'); phaseEl.className = 'review-phase';
+    const h = document.createElement('h3'); h.textContent = phaseName; phaseEl.appendChild(h);
+    byPhase[phaseName].forEach(step => phaseEl.appendChild(buildReviewStep(step, counts, checkedSet, updateProgress)));
+    frag.appendChild(phaseEl);
+  });
+
+  // Footer actions.
+  const footer = document.createElement('div'); footer.className = 'review-footer';
+  const completeBtn = document.createElement('button'); completeBtn.className = 'primary'; completeBtn.textContent = '✓ Complete review (mark Runway + 10k reviewed)';
+  completeBtn.title = 'Stamps the Runway and 10k Projects horizons as reviewed today (Areas/Goals are monthly/quarterly cycles).';
+  completeBtn.addEventListener('click', () => {
+    markReviewedHorizons(['runway', '10k']);
+    const finalState = loadReviewState();
+    finalState.completedAt = new Date().toISOString();
+    // Auto-clear the checkboxes so next week starts fresh; keep completedAt
+    // and startedAt so Mike still sees "last completed N days ago" in the
+    // footer. Architect Phase-8 carryover: stale checks linger = false signal.
+    finalState.checked = [];
+    finalState.startedAt = null;
+    saveReviewState(finalState);
+    showOk('🎉 Weekly Review complete — Runway + 10k stamped reviewed.');
+    renderAltitudeBadge(currentTab);
+    loadTab('weeklyreview');
+  });
+  const resetBtn = document.createElement('button'); resetBtn.textContent = '↺ Reset checklist';
+  resetBtn.title = 'Clear all checkboxes to start a fresh review next time.';
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Reset all 11 checkboxes? (last-reviewed timestamps are not touched.)')) return;
+    clearReviewState();
+    loadTab('weeklyreview');
+  });
+  footer.append(completeBtn, resetBtn);
+  if (state.completedAt) {
+    const info = document.createElement('span'); info.className = 'footer-info';
+    info.textContent = `Last completed ${new Date(state.completedAt).toLocaleDateString()} (${Math.floor(daysSince(new Date(state.completedAt)))}d ago)`;
+    footer.appendChild(info);
+  }
+  frag.appendChild(footer);
+
+  // Canonical XPLANE workflow map at bottom (per mvp-scope.md §8 + §9 visual conventions).
+  frag.appendChild(buildXplaneMap());
+
+  list.replaceChildren(frag);
+}
+
+function buildReviewStep(step, counts, checkedSet, onChange) {
+  const row = document.createElement('div'); row.className = 'review-step' + (checkedSet.has(step.n) ? ' checked' : '');
+  const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = checkedSet.has(step.n);
+  cb.addEventListener('change', () => {
+    if (cb.checked) checkedSet.add(step.n); else checkedSet.delete(step.n);
+    row.classList.toggle('checked', cb.checked);
+    const s = loadReviewState();
+    s.checked = Array.from(checkedSet);
+    saveReviewState(s);
+    onChange();
+  });
+  row.appendChild(cb);
+  const body = document.createElement('div'); body.className = 'step-body';
+  const row1 = document.createElement('div'); row1.className = 'step-row1';
+  const num = document.createElement('span'); num.className = 'step-num'; num.textContent = step.n + '.';
+  const title = document.createElement('span'); title.className = 'step-title'; title.textContent = step.title;
+  row1.append(num, title);
+  if (step.countKey && counts[step.countKey] != null) {
+    const c = counts[step.countKey];
+    const isWarn = typeof step.warnIf === 'function' && step.warnIf(c);
+    const badge = document.createElement('span'); badge.className = 'step-count' + (isWarn ? ' warn' : '');
+    badge.textContent = isWarn ? `${c} — ${step.warnMsg}` : `${c} items`;
+    row1.appendChild(badge);
+  }
+  body.appendChild(row1);
+  const help = document.createElement('div'); help.className = 'step-help'; help.textContent = step.help;
+  body.appendChild(help);
+  if (step.jumpTab || step.openMindSweep) {
+    const actions = document.createElement('div'); actions.className = 'step-actions';
+    if (step.jumpTab) {
+      const b = document.createElement('button'); b.textContent = `→ Jump to ${TABS[step.jumpTab].title}`;
+      b.addEventListener('click', () => switchTab(step.jumpTab));
+      actions.appendChild(b);
+    }
+    if (step.openMindSweep) {
+      const b = document.createElement('button'); b.textContent = '🧠 Open MindSweep drawer';
+      b.addEventListener('click', () => {
+        const panel = document.getElementById('mindsweep-panel');
+        if (!panel.classList.contains('open')) toggleMindSweep();
+      });
+      actions.appendChild(b);
+    }
+    body.appendChild(actions);
+  }
+  row.appendChild(body);
+  return row;
+}
+
+function buildXplaneMap() {
+  const wrap = document.createElement('div'); wrap.className = 'xplane-map';
+  const h = document.createElement('h3'); h.textContent = 'Canonical GTD workflow (XPLANE)'; wrap.appendChild(h);
+  const flow = document.createElement('div'); flow.className = 'xplane-flow';
+  const phases = [
+    { cls: 'collect',  label: 'COLLECT',  sub: 'Stuff → Inbox' },
+    { cls: 'process',  label: 'PROCESS',  sub: 'Clarify decision tree' },
+    { cls: 'organize', label: 'ORGANIZE', sub: 'Storage by type' },
+    { cls: 'review',   label: 'REVIEW',   sub: 'Daily / Weekly / Monthly+' },
+    { cls: 'doaction', label: 'DO',       sub: 'Engage' },
+  ];
+  phases.forEach((p, i) => {
+    if (i > 0) { const arrow = document.createElement('span'); arrow.className = 'xplane-arrow'; arrow.textContent = '→'; flow.appendChild(arrow); }
+    const bub = document.createElement('div'); bub.className = 'xplane-bubble ' + p.cls;
+    const lab = document.createElement('div'); lab.textContent = p.label; bub.appendChild(lab);
+    const sub = document.createElement('div'); sub.style.fontSize = '0.66rem'; sub.style.opacity = '.75'; sub.style.marginTop = '4px'; sub.style.fontWeight = '400'; sub.textContent = p.sub;
+    bub.appendChild(sub);
+    flow.appendChild(bub);
+  });
+  wrap.appendChild(flow);
+  const caption = document.createElement('div'); caption.className = 'xplane-caption';
+  caption.textContent = 'Allen’s 5 phases of Mastering Workflow. The Weekly Review (above) is the heart of the REVIEW loop — without it, the system collapses into half-trusted reminders and post-its. The dashboard’s tab bar mirrors this scaffold left-to-right: DO (Today) ← COLLECT (Inbox) ← PROCESS (triage) ← ORGANIZE (NA/Projects/Areas/Goals/Waiting/Someday/Reference/Tickler) ← REVIEW (this tab).';
+  wrap.appendChild(caption);
+  return wrap;
 }
 
 // ---------------- Phase 5 — Modal helpers, Edit, Natural Planning wizard, Support, Stuck? ----------------
